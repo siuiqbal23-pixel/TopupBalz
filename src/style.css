@@ -143,7 +143,8 @@
 .message-tools>button,.message-more-anchor>button{height:30px;min-width:30px;padding:0 7px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font:500 13px 'DM Sans';cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .message-tools>button:hover,.message-more-anchor>button:hover{background:var(--soft);color:var(--text);border-color:var(--line)}
 .message-tools>button.chosen{background:var(--soft);color:#b96d43;border-color:var(--line)}
-.message-more-anchor{position:relative}
-.message-more-popup{top:34px;left:0;right:auto;width:225px}
+.message-more-anchor{position:relative;flex:0 0 30px}
+.message-more-anchor>button{width:30px;min-width:30px;padding:0}
+.message-more-popup{top:34px;right:0;left:auto;width:min(225px,calc(100vw - 32px));transform-origin:top right}
 .message-more-popup button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:520px){.message-tools{gap:2px}.message-tools>button,.message-more-anchor>button{min-width:29px;height:29px;padding:0 6px;font-size:12px}}
