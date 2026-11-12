@@ -1,4 +1,4 @@
-import { isAdmin } from './_auth.js';
+import { isAdmin } from '../../lib/admin-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
 
 export default async function handler(req, res) {
