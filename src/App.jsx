@@ -66,6 +66,19 @@ function App() {
   const [feedback, setFeedback] = useState({});
   const [messageMenu, setMessageMenu] = useState(-1);
   const [messageMenuPos, setMessageMenuPos] = useState({ top: 12, left: 12 });
+  useEffect(() => {
+    if (messageMenu === -1) return;
+    const closeOnOutside = event => {
+      if (!event.target.closest?.('.message-more-anchor')) setMessageMenu(-1);
+    };
+    const closeOnEscape = event => { if (event.key === 'Escape') setMessageMenu(-1); };
+    document.addEventListener('pointerdown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [messageMenu]);
   const [speaking, setSpeaking] = useState(-1);
   const end = useRef(null);
   const fileRef = useRef(null);
