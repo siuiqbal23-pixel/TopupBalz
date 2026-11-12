@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
         messages: [
           { role: 'system', content: 'Anda ialah IBalz, pembantu AI yang mesra, jelas dan membantu. Balas dalam bahasa yang digunakan pengguna.' },
           ...messages,
