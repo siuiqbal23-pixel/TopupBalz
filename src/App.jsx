@@ -64,14 +64,14 @@ function renderInline(content, keyPrefix = 'inline') {
 }
 function renderMessage(content, copyCode) {
   const source = String(content || '');
-  const pattern = /\\x60{3}([^\\n]*)\\n([\\s\\S]*?)\\n\\x60{3}/g;
+  const pattern = /\x60{3}([^\n]*)\n([\s\S]*?)\n\x60{3}/g;
   const output = [];
   let last = 0;
   let match;
   let index = 0;
   while ((match = pattern.exec(source)) !== null) {
     if (match.index > last) output.push(<span key={'text-' + index++}>{renderInline(source.slice(last, match.index), 'p' + index)}</span>);
-    const language = String(match[1] || 'text').trim().toLowerCase().split(/\\s+/)[0] || 'text';
+    const language = String(match[1] || 'text').trim().toLowerCase().split(/\s+/)[0] || 'text';
     const code = match[2] || '';
     output.push(<div className="code-card" key={'code-' + index++}>
       <div className="code-card-head">
