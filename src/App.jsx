@@ -211,7 +211,7 @@ function App() {
             </div>
           </div>}
         </div>)}
-        {busy && <article className="msg assistant"><div className="bubble typing"><i/><i/><i/></div></article>}
+        {busy && <article className="msg assistant"><div className="bubble typing"><span>IBalz sedang menaip</span><i/><i/><i/></div></article>}
       </section>
       {error && <div className="error">{error}</div>}
       {image && <div className="image-preview"><img src={image} alt="Pratonton gambar"/><div><b>{imageName}</b><small>Gambar sedia dihantar</small></div><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Buang gambar">×</button></div>}
