@@ -145,6 +145,6 @@
 .message-tools>button.chosen{background:var(--soft);color:#b96d43;border-color:var(--line)}
 .message-more-anchor{position:relative;flex:0 0 30px}
 .message-more-anchor>button{width:30px;min-width:30px;padding:0}
-.message-more-popup{top:34px;right:0;left:auto;width:min(225px,calc(100vw - 32px));transform-origin:top right}
+.message-more-popup{top:auto;bottom:34px;right:auto;left:0;width:min(225px,calc(100vw - 32px));transform-origin:bottom left}
 .message-more-popup button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:520px){.message-tools{gap:2px}.message-tools>button,.message-more-anchor>button{min-width:29px;height:29px;padding:0 6px;font-size:12px}}
