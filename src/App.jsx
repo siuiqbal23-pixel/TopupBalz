@@ -106,6 +106,21 @@ function App() {
   const [historyMenu, setHistoryMenu] = useState('');
   const historyPressTimerRef = useRef(0);
   const historyLongPressRef = useRef(false);
+  useEffect(() => {
+    if (!historyMenu) return;
+    const closeHistoryMenu = event => {
+      if (!event.target.closest('.history-context-menu')) setHistoryMenu('');
+    };
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setHistoryMenu('');
+    };
+    document.addEventListener('pointerdown', closeHistoryMenu);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeHistoryMenu);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [historyMenu]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
