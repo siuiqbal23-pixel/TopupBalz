@@ -171,8 +171,8 @@ function App() {
           <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>
           {m.role === 'assistant' && <div className="message-tools">
             <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}>▢</button>
-            <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}>♧</button>
-            <button className={feedback[i] === 'dislike' ? 'chosen' : ''} title="Tidak suka" aria-label="Tidak suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'dislike' ? '' : 'dislike'}))}>♧</button>
+            <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}>👍</button>
+            <button className={feedback[i] === 'dislike' ? 'chosen' : ''} title="Tidak suka" aria-label="Tidak suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'dislike' ? '' : 'dislike'}))}>👎</button>
             <button className={speaking === i ? 'chosen' : ''} title="Baca dengan suara" aria-label="Baca dengan suara" onClick={() => speakMessage(m.content, i)}>◖))</button>
             <button title="Kongsi" aria-label="Kongsi" onClick={() => shareMessage(m.content)}>↗</button>
             <div className="popup-anchor message-more-anchor">
