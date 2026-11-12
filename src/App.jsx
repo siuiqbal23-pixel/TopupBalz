@@ -92,7 +92,7 @@ function App() {
   const [chats, setChats] = useState(readHistory);
   const [activeId, setActiveId] = useState(() => sessionStorage.getItem('ibalz-active-chat') || '');
   const [messages, setMessages] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('ibalz-chat')) || starter; } catch { return starter; }
+    try { const saved = JSON.parse(sessionStorage.getItem('ibalz-chat')); return Array.isArray(saved) && saved[0]?.content !== 'Hai! Saya IBalz AI. Apa yang boleh saya bantu hari ini?' ? saved : starter; } catch { return starter; }
   });
   const [sessionId, setSessionId] = useState(() => sessionStorage.getItem('ibalz-chat-session') || '');
   const [input, setInput] = useState('');
@@ -167,7 +167,7 @@ function App() {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }
   useEffect(() => {
-    if (!activeId || messages.length <= 1) return;
+    if (!activeId || messages.length === 0) return;
     const current = { id: activeId, sessionId, title: titleFor(messages), messages, updatedAt: new Date().toISOString() };
     setChats(old => {
       const next = [current, ...old.filter(c => c.id !== activeId)].slice(0, 80);
