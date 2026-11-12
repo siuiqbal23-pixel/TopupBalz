@@ -134,3 +134,16 @@
 .msg.user .bubble{background:#f4a261;border-color:#f4a261;color:#171717}
 .send,.top-action.new-action,.history-new{background:#f4a261;border-color:#f4a261;color:#171717}
 .attach{background:var(--soft);color:#171717}
+
+
+/* Compact actions beneath assistant replies */
+.message-unit{display:block;margin:0 0 22px}
+.message-unit .msg.assistant{margin:18px 0 5px}
+.message-tools{display:flex;align-items:center;gap:5px;padding:2px 0 0 0;position:relative}
+.message-tools>button,.message-more-anchor>button{height:30px;min-width:30px;padding:0 7px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--muted);font:500 13px 'DM Sans';cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.message-tools>button:hover,.message-more-anchor>button:hover{background:var(--soft);color:var(--text);border-color:var(--line)}
+.message-tools>button.chosen{background:var(--soft);color:#b96d43;border-color:var(--line)}
+.message-more-anchor{position:relative}
+.message-more-popup{top:34px;left:0;right:auto;width:225px}
+.message-more-popup button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:520px){.message-tools{gap:2px}.message-tools>button,.message-more-anchor>button{min-width:29px;height:29px;padding:0 6px;font-size:12px}}
