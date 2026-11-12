@@ -105,3 +105,14 @@
 .composer{flex:0 0 auto;margin:0 0 2px}
 .image-preview{flex:0 0 auto}
 @media(max-width:520px){.shell{padding:12px 0 max(8px,env(safe-area-inset-bottom))}.welcome{padding-top:8px;padding-bottom:8px}.chat{min-height:0;max-height:none}.composer{margin-bottom:2px}}
+
+
+/* Clean ChatGPT-style messages: user keeps a bubble, AI uses plain larger text */
+.msg{gap:0;margin:18px 0}
+.msg .avatar{display:none}
+.msg.assistant{display:block;margin:22px 0}
+.msg.assistant .bubble{max-width:100%;padding:2px 0;background:transparent;border:0;border-radius:0;color:var(--text);font-size:17px;line-height:1.8;letter-spacing:.01em}
+.msg.user{display:flex;justify-content:flex-end;margin:18px 0}
+.msg.user .bubble{max-width:min(86%,620px);font-size:15px;line-height:1.7;padding:12px 16px}
+.msg.assistant .typing{display:flex;width:max-content;padding:13px 0}
+@media(max-width:520px){.msg.assistant .bubble{font-size:16px;line-height:1.8}.msg.user .bubble{font-size:14px}}
