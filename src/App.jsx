@@ -64,8 +64,7 @@ function renderInline(content, keyPrefix = 'inline') {
 }
 function renderMessage(content, copyCode) {
   const source = String(content || '');
-  const fence = String.fromCharCode(96).repeat(3);
-  const pattern = new RegExp(fence + '([^\\\\n]*)\\\\n([\\\\s\\\\S]*?)\\\\n' + fence, 'g');
+  const pattern = /\\x60{3}([^\\n]*)\\n([\\s\\S]*?)\\n\\x60{3}/g;
   const output = [];
   let last = 0;
   let match;
