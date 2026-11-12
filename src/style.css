@@ -145,7 +145,7 @@
 .message-tools>button.chosen{background:var(--soft);color:#b96d43;border-color:var(--line)}
 .message-more-anchor{position:relative;flex:0 0 30px}
 .message-more-anchor>button{width:30px;min-width:30px;padding:0}
-.message-more-popup{position:absolute;top:auto;bottom:34px;left:0;right:auto;width:180px;max-width:calc(100vw - 24px);padding:5px;box-sizing:border-box;transform-origin:bottom left;overflow:hidden}
+.message-more-popup{position:fixed!important;z-index:1000;bottom:auto!important;right:auto!important;width:min(180px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:5px;box-sizing:border-box;transform:none!important;animation:none!important;overflow:hidden;contain:layout paint}
 .message-more-popup button{gap:8px;padding:8px 7px;min-width:0}
 .message-more-popup button>span{flex:0 0 17px;display:flex;align-items:center;justify-content:center}
 .message-more-popup button div{min-width:0;gap:2px}
