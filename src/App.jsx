@@ -53,17 +53,39 @@ function ActionIcon({ name }) {
   return <svg {...common}>{paths[name]}</svg>;
 }
 
-function renderMessage(content) {
+const CODE_LANGUAGES = ['text','html','css','javascript','typescript','jsx','tsx','json','python','java','c','cpp','csharp','php','sql','bash','shell','yaml','xml','markdown','go','rust','ruby','swift','kotlin'];
+function renderInline(content, keyPrefix = 'inline') {
   const parts = String(content || '').split(/(\*\*[^*]+?\*\*|__[^_]+?__|\*[^*\n]+?\*|_[^_\n]+?_)/g);
   return parts.map((part, index) => {
-    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
-      return <strong key={index}>{part.slice(2, -2)}</strong>;
-    }
-    if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
-      return <em key={index}>{part.slice(1, -1)}</em>;
-    }
+    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) return <strong key={keyPrefix + index}>{part.slice(2, -2)}</strong>;
+    if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) return <em key={keyPrefix + index}>{part.slice(1, -1)}</em>;
     return part;
   });
+}
+function renderMessage(content, copyCode) {
+  const source = String(content || '');
+  const fence = String.fromCharCode(96).repeat(3);
+  const blocks = source.split(new RegExp('(^|\\\\n)' + fence + '([^\\\\n]*)\\\\n([\\\\s\\\\S]*?)\\\\n' + fence + '(?=\\\\n|$)', 'g'));
+  const output = [];
+  for (let i = 0; i < blocks.length; i++) {
+    const part = blocks[i];
+    if (part === '\n' || part === '') continue;
+    if (i + 2 < blocks.length && blocks[i + 1] !== undefined) {
+      const language = String(blocks[i + 1] || 'text').trim().toLowerCase().split(/\s+/)[0] || 'text';
+      const code = blocks[i + 2] || '';
+      output.push(<div className="code-card" key={'code-' + i}>
+        <div className="code-card-head">
+          <label className="code-language"><span className="code-dot"/><select aria-label="Bahasa kod" value={CODE_LANGUAGES.includes(language) ? language : 'text'} onChange={() => {}}>{CODE_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}</select></label>
+          <button className="copy-code" onClick={() => copyCode(code)} type="button"><ActionIcon name="copy"/> <span>Copy Code</span></button>
+        </div>
+        <pre><code>{code}</code></pre>
+      </div>);
+      i += 2;
+      continue;
+    }
+    output.push(<span key={'text-' + i}>{renderInline(part.replace(/^\n|\n$/g, ''), 'p' + i)}</span>);
+  }
+  return output;
 }
 
 function App() {
@@ -103,13 +125,26 @@ function App() {
   const [speaking, setSpeaking] = useState(-1);
   const fileRef = useRef(null);
   const chatRef = useRef(null);
+  const nearBottomRef = useRef(true);
+  const scrollFrameRef = useRef(0);
 
   useEffect(() => {
     localStorage.setItem('ibalz-chat', JSON.stringify(messages));
-    if (messages[messages.length - 1]?.role === 'user') {
-      requestAnimationFrame(() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }));
-    }
   }, [messages]);
+  useEffect(() => {
+    if (!nearBottomRef.current) return;
+    cancelAnimationFrame(scrollFrameRef.current);
+    scrollFrameRef.current = requestAnimationFrame(() => {
+      const el = chatRef.current;
+      if (el && nearBottomRef.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(scrollFrameRef.current);
+  }, [messages, busy]);
+  function handleChatScroll() {
+    const el = chatRef.current;
+    if (!el) return;
+    nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 110;
+  }
   useEffect(() => {
     if (!activeId || messages.length <= 1) return;
     const current = { id: activeId, sessionId, title: titleFor(messages), messages, updatedAt: new Date().toISOString() };
@@ -218,9 +253,9 @@ function App() {
     </header>
     <main className="shell">
       {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
-      <section className="chat" ref={chatRef}>
+      <section className="chat" ref={chatRef} onScroll={handleChatScroll}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
-          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>
+          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}</div></article>
           {m.role === 'assistant' && <div className="message-tools">
             <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}><ActionIcon name="copy" /></button>
             <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}><ActionIcon name="like" /></button>
