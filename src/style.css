@@ -166,3 +166,17 @@
 .msg.assistant .typing i:nth-child(2){animation-delay:.15s}
 .msg.assistant .typing i:nth-child(3){animation-delay:.3s}
 @media(prefers-reduced-motion:reduce){.message-unit .msg.assistant .bubble,.message-unit .message-tools{animation:none}.msg.assistant .typing i{animation:none}}
+
+
+/* Responsive code blocks with one-tap copy */
+.code-card{width:100%;max-width:100%;margin:14px 0 16px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:#17191d;color:#e8eaf0;box-shadow:0 5px 18px #0000000c}
+.code-card-head{min-height:42px;padding:6px 10px 6px 13px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#22252b;border-bottom:1px solid #ffffff12}
+.code-language{display:inline-flex;align-items:center;gap:8px;color:#e5e7eb;font:600 11px 'DM Sans',sans-serif;text-transform:lowercase}
+.code-dot{width:7px;height:7px;border-radius:50%;background:#f4a261;display:inline-block;flex:0 0 7px}
+.copy-code{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 10px;border:1px solid #ffffff20;border-radius:8px;background:#30343b;color:#f5f5f5;font:600 10px 'DM Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.copy-code svg{width:14px;height:14px}
+.copy-code:hover{background:#414650}
+.code-card pre{display:block;max-width:100%;margin:0;padding:14px;overflow:auto;overscroll-behavior-x:contain;white-space:pre;tab-size:2;-webkit-overflow-scrolling:touch}
+.code-card code{display:block;color:#e8eaf0;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;overflow-wrap:normal}
+.msg.assistant .bubble .code-card{font-size:12px;line-height:1.6;letter-spacing:0}
+@media(max-width:520px){.code-card{border-radius:11px;margin:12px 0}.code-card-head{min-height:40px;padding:6px 8px 6px 11px}.code-card pre{padding:11px}.code-card code{font-size:11px;line-height:1.65}.copy-code{padding:7px 8px}}
