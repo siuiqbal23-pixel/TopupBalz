@@ -115,8 +115,8 @@ function App() {
     <main className="shell">
       {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat">
-        {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="avatar">{m.role === 'assistant' ? 'B' : 'K'}</div><div className="bubble">{m.content}</div></article>)}
-        {busy && <article className="msg assistant"><div className="avatar">B</div><div className="bubble typing"><i/><i/><i/></div></article>}
+        {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="bubble">{m.content}</div></article>)}
+        {busy && <article className="msg assistant"><div className="bubble typing"><i/><i/><i/></div></article>}
         <div ref={end}/>
       </section>
       {error && <div className="error">{error}</div>}
