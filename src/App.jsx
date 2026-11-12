@@ -288,6 +288,7 @@ function App() {
         </div>)}
         {busy && <article className="msg assistant"><div className="bubble typing"><span>IBalz sedang menaip</span><i/><i/><i/></div></article>}
       </section>
+      {showJumpDown && <button className="jump-to-latest" onClick={jumpToLatest} aria-label="Pergi ke mesej terkini" title="Mesej terkini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5"/></svg></button>}
       {error && <div className="error">{error}</div>}
       {image && <div className="image-preview"><img src={image} alt="Pratonton gambar"/><div><b>{imageName}</b><small>Gambar sedia dihantar</small></div><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Buang gambar">×</button></div>}
       <section className="composer">
