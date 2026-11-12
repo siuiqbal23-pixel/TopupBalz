@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Admin from './Admin.jsx';
 
-const starter = [{ role: 'assistant', content: 'Hai! Saya IBalz AI. Apa yang boleh saya bantu hari ini?' }];
+const starter = [];
 const HISTORY_KEY = 'ibalz-chat-history';
 const uid = () => globalThis.crypto?.randomUUID?.() || ('chat-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 function getVisitorId() {
@@ -102,6 +102,10 @@ function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
+  const [historyMenu, setHistoryMenu] = useState('');
+  const historyPressTimerRef = useRef(0);
+  const historyLongPressRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
@@ -173,6 +177,40 @@ function App() {
     sessionStorage.setItem('ibalz-active-chat', activeId);
   }, [messages, sessionId, activeId]);
 
+  function updateHistoryChat(id, patch) {
+    setChats(old => {
+      const next = old.map(chat => chat.id === id ? { ...chat, ...patch } : chat);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+    setHistoryMenu('');
+  }
+  function deleteHistoryChat(chat) {
+    if (!window.confirm(`Padam chat “${chat.title || 'Perbualan'}”?`)) return;
+    setChats(old => {
+      const next = old.filter(item => item.id !== chat.id);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+      return next;
+    });
+    if (activeId === chat.id) startNew();
+    setHistoryMenu('');
+  }
+  function renameHistoryChat(chat) {
+    const nextTitle = window.prompt('Masukkan nama baharu untuk chat ini:', chat.title || '');
+    if (nextTitle === null) return;
+    const title = nextTitle.trim();
+    if (!title) { setError('Nama chat tidak boleh kosong.'); return; }
+    updateHistoryChat(chat.id, { title: title.slice(0, 60) });
+  }
+  function beginHistoryPress(id) {
+    historyLongPressRef.current = false;
+    clearTimeout(historyPressTimerRef.current);
+    historyPressTimerRef.current = setTimeout(() => {
+      historyLongPressRef.current = true;
+      setHistoryMenu(id);
+    }, 550);
+  }
+  function cancelHistoryPress() { clearTimeout(historyPressTimerRef.current); }
   function startNew() {
     setMessages(starter); setSessionId(''); setActiveId(''); setInput(''); setImage(''); setImageName(''); setError('');
     sessionStorage.removeItem('ibalz-chat-session'); sessionStorage.removeItem('ibalz-active-chat');
@@ -260,7 +298,9 @@ function App() {
       else await copyMessage(text);
     } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
   }
-  const visibleChats = chats.filter(c => (c.title || '').toLowerCase().includes(search.toLowerCase()));
+  const visibleChats = chats
+    .filter(c => Boolean(c.archived) === showArchived && (c.title || '').toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top simple-top">
       <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Sejarah chat" aria-label="Sejarah chat"><span/><span/><span/></button>
@@ -269,7 +309,7 @@ function App() {
       </div>
     </header>
     <main className="shell">
-      {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
+      {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat" ref={chatRef} onScroll={handleChatScroll}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
           <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}</div></article>
@@ -303,8 +343,17 @@ function App() {
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
       <div className="history-head"><div><small>IBALZ AI</small><h2>Sejarah chat</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
       <button className="history-new" onClick={startNew}>＋ Chat baharu</button>
+      <div className="history-tabs"><button className={!showArchived ? 'active' : ''} onClick={() => { setShowArchived(false); setHistoryMenu(''); }}>Semua</button><button className={showArchived ? 'active' : ''} onClick={() => { setShowArchived(true); setHistoryMenu(''); }}>Arkib</button></div>
       <input className="history-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari perbualan..."/>
-      <div className="history-items">{visibleChats.length ? visibleChats.map(c => <button key={c.id} className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => openChat(c)}><b>{c.title || 'Perbualan baharu'}</b></button>) : <p className="history-empty">Belum ada sejarah chat pada peranti ini.</p>}</div>
+      <div className="history-items">{visibleChats.length ? visibleChats.map(c => <div key={c.id} className="history-item-wrap" onPointerDown={() => beginHistoryPress(c.id)} onPointerUp={cancelHistoryPress} onPointerLeave={cancelHistoryPress} onPointerCancel={cancelHistoryPress} onContextMenu={e => { e.preventDefault(); setHistoryMenu(c.id); }}>
+        <button className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => { if (historyLongPressRef.current) { historyLongPressRef.current = false; return; } if (!historyMenu) openChat(c); }}><b>{c.pinned ? '📌 ' : ''}{c.title || 'Perbualan baharu'}</b></button>
+        {historyMenu === c.id && <div className="history-context-menu">
+          <button onClick={() => updateHistoryChat(c.id, { pinned: !c.pinned })}>{c.pinned ? 'Nyahpin chat' : 'Pin chat'}</button>
+          <button onClick={() => renameHistoryChat(c)}>Namakan semula</button>
+          <button onClick={() => updateHistoryChat(c.id, { archived: !c.archived })}>{c.archived ? 'Keluarkan daripada arkib' : 'Arkibkan'}</button>
+          <button className="danger" onClick={() => deleteHistoryChat(c)}>Padam</button>
+        </div>}
+      </div>) : <p className="history-empty">{showArchived ? 'Tiada chat dalam arkib.' : 'Belum ada sejarah chat pada peranti ini.'}</p>}</div>
       <p className="history-foot">Sejarah ini disimpan dalam pelayar peranti anda.</p>
     </aside></div>}
   </div>;
