@@ -90,11 +90,11 @@ function App() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [chats, setChats] = useState(readHistory);
-  const [activeId, setActiveId] = useState(() => localStorage.getItem('ibalz-active-chat') || '');
+  const [activeId, setActiveId] = useState(() => sessionStorage.getItem('ibalz-active-chat') || '');
   const [messages, setMessages] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ibalz-chat')) || starter; } catch { return starter; }
+    try { return JSON.parse(sessionStorage.getItem('ibalz-chat')) || starter; } catch { return starter; }
   });
-  const [sessionId, setSessionId] = useState(() => localStorage.getItem('ibalz-chat-session') || '');
+  const [sessionId, setSessionId] = useState(() => sessionStorage.getItem('ibalz-chat-session') || '');
   const [input, setInput] = useState('');
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
@@ -129,7 +129,7 @@ function App() {
   const [showJumpDown, setShowJumpDown] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('ibalz-chat', JSON.stringify(messages));
+    sessionStorage.setItem('ibalz-chat', JSON.stringify(messages));
   }, [messages]);
   useEffect(() => {
     if (messages[messages.length - 1]?.role !== 'user') return;
@@ -170,20 +170,20 @@ function App() {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
       return next;
     });
-    localStorage.setItem('ibalz-active-chat', activeId);
+    sessionStorage.setItem('ibalz-active-chat', activeId);
   }, [messages, sessionId, activeId]);
 
   function startNew() {
     setMessages(starter); setSessionId(''); setActiveId(''); setInput(''); setImage(''); setImageName(''); setError('');
-    localStorage.removeItem('ibalz-chat-session'); localStorage.removeItem('ibalz-active-chat');
-    localStorage.setItem('ibalz-chat', JSON.stringify(starter));
+    sessionStorage.removeItem('ibalz-chat-session'); sessionStorage.removeItem('ibalz-active-chat');
+    sessionStorage.setItem('ibalz-chat', JSON.stringify(starter));
     setHistoryOpen(false);
   }
   function openChat(chat) {
     setActiveId(chat.id); setMessages(chat.messages || starter); setSessionId(chat.sessionId || '');
-    if (chat.sessionId) localStorage.setItem('ibalz-chat-session', chat.sessionId); else localStorage.removeItem('ibalz-chat-session');
-    localStorage.setItem('ibalz-chat', JSON.stringify(chat.messages || starter));
-    localStorage.setItem('ibalz-active-chat', chat.id);
+    if (chat.sessionId) localStorage.setItem('ibalz-chat-session', chat.sessionId); else sessionStorage.removeItem('ibalz-chat-session');
+    sessionStorage.setItem('ibalz-chat', JSON.stringify(chat.messages || starter));
+    sessionStorage.setItem('ibalz-active-chat', chat.id);
     setImage(''); setImageName(''); setError(''); setHistoryOpen(false); setMoreOpen(false); setNewMenuOpen(false);
   }
   function chooseImage(file) {
