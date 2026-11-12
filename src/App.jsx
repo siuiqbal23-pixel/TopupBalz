@@ -125,6 +125,8 @@ function App() {
   const chatRef = useRef(null);
   const nearBottomRef = useRef(true);
   const scrollFrameRef = useRef(0);
+  const scrollIdleTimerRef = useRef(0);
+  const [showJumpDown, setShowJumpDown] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('ibalz-chat', JSON.stringify(messages));
@@ -142,6 +144,21 @@ function App() {
     const el = chatRef.current;
     if (!el) return;
     nearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 110;
+    clearTimeout(scrollIdleTimerRef.current);
+    if (nearBottomRef.current) {
+      setShowJumpDown(false);
+      return;
+    }
+    scrollIdleTimerRef.current = setTimeout(() => {
+      if (!nearBottomRef.current) setShowJumpDown(true);
+    }, 450);
+  }
+  function jumpToLatest() {
+    const el = chatRef.current;
+    if (!el) return;
+    setShowJumpDown(false);
+    nearBottomRef.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }
   useEffect(() => {
     if (!activeId || messages.length <= 1) return;
