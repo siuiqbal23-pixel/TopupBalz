@@ -65,27 +65,26 @@ function renderInline(content, keyPrefix = 'inline') {
 function renderMessage(content, copyCode) {
   const source = String(content || '');
   const fence = String.fromCharCode(96).repeat(3);
-  const blocks = source.split(new RegExp('(^|\\\\n)' + fence + '([^\\\\n]*)\\\\n([\\\\s\\\\S]*?)\\\\n' + fence + '(?=\\\\n|$)', 'g'));
+  const pattern = new RegExp(fence + '([^\\\\n]*)\\\\n([\\\\s\\\\S]*?)\\\\n' + fence, 'g');
   const output = [];
-  for (let i = 0; i < blocks.length; i++) {
-    const part = blocks[i];
-    if (part === '\n' || part === '') continue;
-    if (i + 2 < blocks.length && blocks[i + 1] !== undefined) {
-      const language = String(blocks[i + 1] || 'text').trim().toLowerCase().split(/\s+/)[0] || 'text';
-      const code = blocks[i + 2] || '';
-      output.push(<div className="code-card" key={'code-' + i}>
-        <div className="code-card-head">
-          <label className="code-language"><span className="code-dot"/><select aria-label="Bahasa kod" value={CODE_LANGUAGES.includes(language) ? language : 'text'} onChange={() => {}}>{CODE_LANGUAGES.map(lang => <option key={lang} value={lang}>{lang}</option>)}</select></label>
-          <button className="copy-code" onClick={() => copyCode(code)} type="button"><ActionIcon name="copy"/> <span>Copy Code</span></button>
-        </div>
-        <pre><code>{code}</code></pre>
-      </div>);
-      i += 2;
-      continue;
-    }
-    output.push(<span key={'text-' + i}>{renderInline(part.replace(/^\n|\n$/g, ''), 'p' + i)}</span>);
+  let last = 0;
+  let match;
+  let index = 0;
+  while ((match = pattern.exec(source)) !== null) {
+    if (match.index > last) output.push(<span key={'text-' + index++}>{renderInline(source.slice(last, match.index), 'p' + index)}</span>);
+    const language = String(match[1] || 'text').trim().toLowerCase().split(/\\s+/)[0] || 'text';
+    const code = match[2] || '';
+    output.push(<div className="code-card" key={'code-' + index++}>
+      <div className="code-card-head">
+        <span className="code-language"><span className="code-dot"/>{CODE_LANGUAGES.includes(language) ? language : 'text'}</span>
+        <button className="copy-code" onClick={() => copyCode(code)} type="button"><ActionIcon name="copy"/> <span>Copy Code</span></button>
+      </div>
+      <pre><code>{code}</code></pre>
+    </div>);
+    last = pattern.lastIndex;
   }
-  return output;
+  if (last < source.length) output.push(<span key={'text-' + index}>{renderInline(source.slice(last), 'tail')}</span>);
+  return output.length ? output : renderInline(source, 'plain');
 }
 
 function App() {
