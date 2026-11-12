@@ -132,14 +132,16 @@ function App() {
     localStorage.setItem('ibalz-chat', JSON.stringify(messages));
   }, [messages]);
   useEffect(() => {
-    if (!nearBottomRef.current) return;
+    if (messages[messages.length - 1]?.role !== 'user') return;
+    nearBottomRef.current = true;
+    setShowJumpDown(false);
     cancelAnimationFrame(scrollFrameRef.current);
     scrollFrameRef.current = requestAnimationFrame(() => {
       const el = chatRef.current;
-      if (el && nearBottomRef.current) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     });
     return () => cancelAnimationFrame(scrollFrameRef.current);
-  }, [messages, busy]);
+  }, [messages]);
   function handleChatScroll() {
     const el = chatRef.current;
     if (!el) return;
@@ -286,7 +288,7 @@ function App() {
             </div>
           </div>}
         </div>)}
-        {busy && <article className="msg assistant"><div className="bubble typing"><span>IBalz sedang menaip</span><i/><i/><i/></div></article>}
+        {busy && <article className="msg assistant"><div className="bubble typing" aria-label="IBalz sedang menaip"><i/><i/><i/></div></article>}
       </section>
       {showJumpDown && <button className="jump-to-latest" onClick={jumpToLatest} aria-label="Pergi ke mesej terkini" title="Mesej terkini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5"/></svg></button>}
       {error && <div className="error">{error}</div>}
