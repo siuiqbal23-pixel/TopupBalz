@@ -104,20 +104,14 @@ function App() {
   }
   const visibleChats = chats.filter(c => (c.title || '').toLowerCase().includes(search.toLowerCase()));
   return <div className={dark ? 'app dark' : 'app'}>
-    <header className="top">
-      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setMoreOpen(false); setNewMenuOpen(false); }} title="Buka sejarah chat" aria-label="Buka menu"><span/><span/><span/></button>
-      <div className="brand"><div className="mark">B<span>✦</span></div><div><b>IBalz</b><small>AI assistant</small></div></div>
-      <div className="actions">
-        <div className="popup-anchor"><button className="top-action new-action" onClick={() => { setNewMenuOpen(v => !v); setMoreOpen(false); }} title="Mesej baharu">＋ <span>Mesej baharu</span></button>
-          {newMenuOpen && <div className="top-popup new-popup"><button onClick={startNew}><span>＋</span><div><b>Mesej baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
-        </div>
-        <div className="popup-anchor"><button className="iconbtn more-btn" onClick={() => { setMoreOpen(v => !v); setNewMenuOpen(false); }} title="Lagi pilihan" aria-label="Lagi pilihan">•••</button>
-          {moreOpen && <div className="top-popup more-popup"><button onClick={() => { setHistoryOpen(true); setMoreOpen(false); }}>☷ <div><b>Sejarah chat</b><small>Lihat perbualan terdahulu</small></div></button><button onClick={() => { setDark(v => { const n = !v; localStorage.setItem('ibalz-theme', n ? 'dark' : 'light'); return n; }); setMoreOpen(false); }}>{dark ? '☀' : '☾'} <div><b>{dark ? 'Mod cerah' : 'Mod gelap'}</b><small>Tukar penampilan IBalz</small></div></button></div>}
-        </div>
+    <header className="top simple-top">
+      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Sejarah chat" aria-label="Sejarah chat"><span/><span/><span/></button>
+      <div className="popup-anchor new-chat-anchor"><button className="top-action new-action" onClick={() => setNewMenuOpen(v => !v)} title="Chat baharu">＋ <span>Chat baharu</span></button>
+        {newMenuOpen && <div className="top-popup new-popup"><button onClick={() => { startNew(); setNewMenuOpen(false); }}><span>＋</span><div><b>Chat baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
       </div>
     </header>
     <main className="shell">
-      <section className="welcome"><div className="eyebrow"><i/> AI YANG RINGKAS & PANTAS</div><h1>Apa yang boleh<br/><em>IBalz bantu?</em></h1><p>Tanya apa sahaja. Kita fikir dan selesaikan bersama.</p></section>
+      {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat">
         {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="avatar">{m.role === 'assistant' ? 'B' : 'K'}</div><div className="bubble">{m.content}</div></article>)}
         {busy && <article className="msg assistant"><div className="avatar">B</div><div className="bubble typing"><i/><i/><i/></div></article>}
@@ -131,10 +125,7 @@ function App() {
         <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Mesej IBalz..." rows="1"/>
         <button className="send" onClick={send} disabled={busy || (!input.trim() && !image)} aria-label="Hantar">↑</button>
       </section>
-      <div className="hint">＋ Tambah gambar · Enter untuk hantar · Shift + Enter untuk baris baharu</div>
-      <div className="privacy-note">Sejarah chat disimpan pada peranti ini. Perbualan yang dihantar turut boleh dilihat oleh pentadbir IBalz.</div>
     </main>
-    <footer>IBalz AI <span>•</span> Dikuasakan oleh Groq</footer>
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
       <div className="history-head"><div><small>IBALZ AI</small><h2>Sejarah chat</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
       <button className="history-new" onClick={startNew}>＋ Chat baharu</button>
