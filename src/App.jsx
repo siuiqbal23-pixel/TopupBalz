@@ -17,6 +17,19 @@ function titleFor(messages) {
   const first = messages.find(m => m.role === 'user');
   return (first?.content || 'Perbualan baharu').replace(/^\[Gambar dilampirkan\]\s*/, '').slice(0, 48) || 'Perbualan bergambar';
 }
+function renderMessage(content) {
+  const parts = String(content || '').split(/(\\*\\*[^*]+?\\*\\*|__[^_]+?__|\\*[^*\\n]+?\\*|_[^_\\n]+?_)/g);
+  return parts.map((part, index) => {
+    if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
+      return <strong key={index}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') || part.startsWith('_') && part.endsWith('_')) {
+      return <em key={index}>{part.slice(1, -1)}</em>;
+    }
+    return part;
+  });
+}
+
 function App() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
@@ -115,7 +128,7 @@ function App() {
     <main className="shell">
       {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat">
-        {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="bubble">{m.content}</div></article>)}
+        {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>)}
         {busy && <article className="msg assistant"><div className="bubble typing"><i/><i/><i/></div></article>}
         <div ref={end}/>
       </section>
