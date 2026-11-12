@@ -17,6 +17,21 @@ function titleFor(messages) {
   const first = messages.find(m => m.role === 'user');
   return (first?.content || 'Perbualan baharu').replace(/^\[Gambar dilampirkan\]\s*/, '').slice(0, 48) || 'Perbualan bergambar';
 }
+function ActionIcon({ name }) {
+  const common = { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
+  const paths = {
+    copy: <><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></>,
+    like: <><path d="M7 10v11H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3Z"/><path d="M7 10 12 3a2 2 0 0 1 2 2l-1 5h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7"/></>,
+    dislike: <><path d="M7 14V3H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3Z"/><path d="m7 14 5 7a2 2 0 0 0 2-2l-1-5h6a2 2 0 0 0 2-2l-2-7a2 2 0 0 0-2-2H7"/></>,
+    volume: <><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></>,
+    share: <><path d="M12 16V3"/><path d="m7 8 5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></>,
+    more: <><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>,
+    plus: <><path d="M12 5v14M5 12h14"/></>,
+    retry: <><path d="M20 7v5h-5"/><path d="M20 12a8 8 0 1 0 2 5"/></>
+  };
+  return <svg {...common}>{paths[name]}</svg>;
+}
+
 function renderMessage(content) {
   const parts = String(content || '').split(/(\*\*[^*]+?\*\*|__[^_]+?__|\*[^*\n]+?\*|_[^_\n]+?_)/g);
   return parts.map((part, index) => {
@@ -170,16 +185,16 @@ function App() {
         {messages.map((m, i) => <div className="message-unit" key={i}>
           <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>
           {m.role === 'assistant' && <div className="message-tools">
-            <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}>▢</button>
-            <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}>👍</button>
-            <button className={feedback[i] === 'dislike' ? 'chosen' : ''} title="Tidak suka" aria-label="Tidak suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'dislike' ? '' : 'dislike'}))}>👎</button>
-            <button className={speaking === i ? 'chosen' : ''} title="Baca dengan suara" aria-label="Baca dengan suara" onClick={() => speakMessage(m.content, i)}>◖))</button>
-            <button title="Kongsi" aria-label="Kongsi" onClick={() => shareMessage(m.content)}>↗</button>
+            <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}><ActionIcon name="copy" /></button>
+            <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}><ActionIcon name="like" /></button>
+            <button className={feedback[i] === 'dislike' ? 'chosen' : ''} title="Tidak suka" aria-label="Tidak suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'dislike' ? '' : 'dislike'}))}><ActionIcon name="dislike" /></button>
+            <button className={speaking === i ? 'chosen' : ''} title="Baca dengan suara" aria-label="Baca dengan suara" onClick={() => speakMessage(m.content, i)}><ActionIcon name="volume" /></button>
+            <button title="Kongsi" aria-label="Kongsi" onClick={() => shareMessage(m.content)}><ActionIcon name="share" /></button>
             <div className="popup-anchor message-more-anchor">
-              <button title="Lagi" aria-label="Lagi" onClick={() => setMessageMenu(v => v === i ? -1 : i)}>•••</button>
+              <button title="Lagi" aria-label="Lagi" onClick={() => setMessageMenu(v => v === i ? -1 : i)}><ActionIcon name="more" /></button>
               {messageMenu === i && <div className="top-popup message-more-popup">
-                <button onClick={() => { setMessageMenu(-1); startNew(); }}><span>＋</span><div><b>Sembang baharu</b><small>Mulakan perbualan baharu</small></div></button>
-                <button onClick={retryAnswer} disabled={busy}><span>↻</span><div><b>Cuba semula</b><small>Jana semula jawapan terakhir</small></div></button>
+                <button onClick={() => { setMessageMenu(-1); startNew(); }}><span><ActionIcon name="plus" /></span><div><b>Sembang baharu</b><small>Mulakan perbualan baharu</small></div></button>
+                <button onClick={retryAnswer} disabled={busy}><span><ActionIcon name="retry" /></span><div><b>Cuba semula</b><small>Jana semula jawapan terakhir</small></div></button>
               </div>}
             </div>
           </div>}
