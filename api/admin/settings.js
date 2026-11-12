@@ -1,5 +1,6 @@
 import { isAdmin } from '../../lib/admin-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
+import { encryptSecret } from '../../lib/secret-box.js';
 
 export default async function handler(req, res) {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Sila log masuk sebagai admin.' });
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
       await sbFetch('ibalz_settings?on_conflict=key', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ key: 'groq_api_key', value: key, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ key: 'groq_api_key', value: encryptSecret(key), updated_at: new Date().toISOString() }),
       });
       return res.status(200).json({ ok: true });
     }
