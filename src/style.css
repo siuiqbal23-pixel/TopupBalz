@@ -180,3 +180,11 @@
 .code-card code{display:block;color:#e8eaf0;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;overflow-wrap:normal}
 .msg.assistant .bubble .code-card{font-size:12px;line-height:1.6;letter-spacing:0}
 @media(max-width:520px){.code-card{border-radius:11px;margin:12px 0}.code-card-head{min-height:40px;padding:6px 8px 6px 11px}.code-card pre{padding:11px}.code-card code{font-size:11px;line-height:1.65}.copy-code{padding:7px 8px}}
+
+
+.shell{position:relative}
+.jump-to-latest{position:absolute;z-index:5;left:50%;bottom:calc(68px + env(safe-area-inset-bottom));transform:translateX(-50%);width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--bg);color:var(--text);box-shadow:0 4px 16px #00000018;cursor:pointer;opacity:.96;animation:jump-appear .28s ease-out both;transition:background .2s,box-shadow .2s,transform .2s}
+.jump-to-latest svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.jump-to-latest:hover{background:var(--soft);box-shadow:0 6px 20px #00000020;transform:translateX(-50%) translateY(-2px)}
+@keyframes jump-appear{from{opacity:0;transform:translate(-50%,7px)}to{opacity:.96;transform:translate(-50%,0)}}
+@media(max-width:520px){.jump-to-latest{bottom:calc(64px + env(safe-area-inset-bottom));width:32px;height:32px}}
