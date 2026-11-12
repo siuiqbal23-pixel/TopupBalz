@@ -153,3 +153,16 @@
 .message-more-popup button small{font-size:9px;white-space:normal;line-height:1.3}
 .message-more-popup button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:520px){.message-tools{gap:2px}.message-tools>button,.message-more-anchor>button{min-width:29px;height:29px;padding:0 6px;font-size:12px}}
+
+
+/* Elegant assistant reply entrance and typing indicator */
+.message-unit .msg.assistant .bubble{animation:assistantReveal .42s cubic-bezier(.2,.75,.25,1) both}
+.message-unit .message-tools{animation:toolsReveal .32s ease .12s both}
+@keyframes assistantReveal{from{opacity:0;transform:translateY(9px);filter:blur(2px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+@keyframes toolsReveal{from{opacity:0}to{opacity:1}}
+.msg.assistant .typing{display:flex;align-items:center;gap:6px;width:max-content;max-width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--muted);font-size:12px;line-height:1.3;box-shadow:0 5px 18px #00000008}
+.msg.assistant .typing span{margin-right:3px}
+.msg.assistant .typing i{width:5px;height:5px;flex:0 0 5px;background:var(--orange);animation:pulse .8s infinite alternate}
+.msg.assistant .typing i:nth-child(2){animation-delay:.15s}
+.msg.assistant .typing i:nth-child(3){animation-delay:.3s}
+@media(prefers-reduced-motion:reduce){.message-unit .msg.assistant .bubble,.message-unit .message-tools{animation:none}.msg.assistant .typing i{animation:none}}
