@@ -48,6 +48,9 @@ function App() {
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [feedback, setFeedback] = useState({});
+  const [messageMenu, setMessageMenu] = useState(-1);
+  const [speaking, setSpeaking] = useState(-1);
   const end = useRef(null);
   const fileRef = useRef(null);
 
@@ -117,6 +120,42 @@ function App() {
     } catch (e) { setError(e.message || 'Tidak dapat menyambung.'); }
     finally { setBusy(false); }
   }
+  async function retryAnswer() {
+    if (busy) return;
+    const lastUserIndex = messages.map(m => m.role).lastIndexOf('user');
+    if (lastUserIndex < 0) return;
+    const lastUser = messages[lastUserIndex];
+    setMessages(messages.slice(0, lastUserIndex + 1));
+    setBusy(true); setError('');
+    try {
+      const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:lastUser.content, sessionId, visitorId:getVisitorId() }) });
+      const data = await res.json();
+      if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
+      if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
+      setMessages(v => [...v, { role:'assistant', content:data.reply }]);
+    } catch (e) { setError(e.message || 'Tidak dapat mencuba semula.'); }
+    finally { setBusy(false); setMessageMenu(-1); }
+  }
+  async function copyMessage(text) {
+    try { await navigator.clipboard.writeText(text); setError(''); }
+    catch { setError('Tidak dapat menyalin. Sila benarkan akses clipboard.'); }
+  }
+  function speakMessage(text, index) {
+    if (!('speechSynthesis' in window)) { setError('Pelayar ini tidak menyokong suara.'); return; }
+    if (speaking === index) { window.speechSynthesis.cancel(); setSpeaking(-1); return; }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ms-MY';
+    utterance.onend = () => setSpeaking(-1);
+    utterance.onerror = () => setSpeaking(-1);
+    setSpeaking(index); window.speechSynthesis.speak(utterance);
+  }
+  async function shareMessage(text) {
+    try {
+      if (navigator.share) await navigator.share({ title:'IBalz AI', text });
+      else await copyMessage(text);
+    } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
+  }
   const visibleChats = chats.filter(c => (c.title || '').toLowerCase().includes(search.toLowerCase()));
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top simple-top">
@@ -128,7 +167,23 @@ function App() {
     <main className="shell">
       {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat">
-        {messages.map((m, i) => <article key={i} className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>)}
+        {messages.map((m, i) => <div className="message-unit" key={i}>
+          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>
+          {m.role === 'assistant' && <div className="message-tools">
+            <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}>▢</button>
+            <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}>♧</button>
+            <button className={feedback[i] === 'dislike' ? 'chosen' : ''} title="Tidak suka" aria-label="Tidak suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'dislike' ? '' : 'dislike'}))}>♧</button>
+            <button className={speaking === i ? 'chosen' : ''} title="Baca dengan suara" aria-label="Baca dengan suara" onClick={() => speakMessage(m.content, i)}>◖))</button>
+            <button title="Kongsi" aria-label="Kongsi" onClick={() => shareMessage(m.content)}>↗</button>
+            <div className="popup-anchor message-more-anchor">
+              <button title="Lagi" aria-label="Lagi" onClick={() => setMessageMenu(v => v === i ? -1 : i)}>•••</button>
+              {messageMenu === i && <div className="top-popup message-more-popup">
+                <button onClick={() => { setMessageMenu(-1); startNew(); }}><span>＋</span><div><b>Sembang baharu</b><small>Mulakan perbualan baharu</small></div></button>
+                <button onClick={retryAnswer} disabled={busy}><span>↻</span><div><b>Cuba semula</b><small>Jana semula jawapan terakhir</small></div></button>
+              </div>}
+            </div>
+          </div>}
+        </div>)}
         {busy && <article className="msg assistant"><div className="bubble typing"><i/><i/><i/></div></article>}
         <div ref={end}/>
       </section>
