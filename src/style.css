@@ -1,1 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');*{box-sizing:border-box}body{margin:0;font-family:'DM Sans',sans-serif}.app{--bg:#fff;--panel:#fff7f1;--text:#202124;--muted:#858585;--line:#f1e6dd;--orange:#f97316;--soft:#fff0e4;min-height:100dvh;background:var(--bg);color:var(--text);display:flex;flex-direction:column;transition:background .2s}.app.dark{--bg:#171717;--panel:#24211f;--text:#f5f5f5;--muted:#aaa;--line:#39312c;--soft:#39271c}.top{height:68px;padding:0 clamp(18px,5vw,64px);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{display:flex;align-items:center;gap:11px}.brand b{font:800 18px Manrope}.brand small{display:block;color:var(--muted);font-size:11px}.mark{width:38px;height:38px;border-radius:13px;background:var(--orange);color:white;display:grid;place-items:center;font:800 21px Manrope;position:relative}.mark span{font-size:10px;position:absolute;right:5px;top:3px}.actions{display:flex;gap:8px}.iconbtn{width:38px;height:38px;border:1px solid var(--line);background:var(--bg);color:var(--text);border-radius:12px;font-size:20px;cursor:pointer}.theme{font-size:16px}.shell{width:min(760px,100% - 32px);margin:0 auto;flex:1;display:flex;flex-direction:column;padding:38px 0 14px}.welcome{text-align:center;padding:10px 0 22px}.eyebrow{font-size:10px;font-weight:800;letter-spacing:1.6px;color:var(--orange)}.eyebrow i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin:0 7px 1px 0}.welcome h1{font:800 clamp(32px,7vw,48px)/1.12 Manrope;letter-spacing:-1.8px;margin:15px 0 10px}.welcome em{font-style:normal;color:var(--orange)}.welcome p{margin:0;color:var(--muted);font-size:14px}.chat{flex:1;min-height:180px;max-height:48dvh;overflow:auto;padding:12px 4px;scrollbar-width:thin}.msg{display:flex;gap:10px;margin:14px 0;align-items:flex-start}.msg.user{flex-direction:row-reverse}.avatar{width:29px;height:29px;flex:0 0 29px;border-radius:10px;background:var(--orange);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px}.user .avatar{background:var(--soft);color:var(--orange)}.bubble{max-width:min(82%,590px);background:var(--panel);border:1px solid var(--line);padding:11px 14px;border-radius:5px 15px 15px 15px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65}.user .bubble{background:var(--orange);border-color:var(--orange);color:white;border-radius:15px 5px 15px 15px}.typing{display:flex;gap:4px;padding:17px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--orange);animation:pulse 1s infinite alternate}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}@keyframes pulse{to{opacity:.25;transform:translateY(-3px)}}.composer{display:flex;gap:10px;align-items:flex-end;padding:10px;border:1px solid var(--line);border-radius:18px;background:var(--bg);box-shadow:0 8px 28px #a64a1010}.composer textarea{flex:1;resize:none;max-height:120px;min-height:40px;border:0;outline:0;background:transparent;color:var(--text);font:14px 'DM Sans';padding:11px 8px}.send{width:40px;height:40px;border:0;border-radius:13px;background:var(--orange);color:white;font-size:24px;cursor:pointer}.send:disabled{opacity:.4}.hint{text-align:center;color:var(--muted);font-size:10px;padding:10px}.error{color:#dc2626;font-size:12px;padding:8px 4px}footer{text-align:center;color:var(--muted);font-size:11px;padding:14px;border-top:1px solid var(--line)}footer span{color:var(--orange);padding:0 5px}@media(max-width:520px){.shell{padding-top:25px}.welcome{padding-bottom:10px}.chat{max-height:52dvh}.bubble{font-size:13px}.top{height:60px}}
+
+/* IBalz admin dashboard */
+.privacy-note{font-size:10px;color:var(--muted);text-align:center;padding:0 8px 10px;line-height:1.5}
+.admin-page{min-height:100dvh;background:#f7f7f8;color:#222;font-family:'DM Sans',sans-serif}
+.admin-top{height:68px;background:#fff;border-bottom:1px solid #ececec;padding:0 clamp(18px,5vw,64px);display:flex;align-items:center;justify-content:space-between}
+.admin-brand{display:flex;align-items:center;gap:9px;text-decoration:none;color:#222;font:800 18px Manrope}
+.admin-brand span,.admin-logo{width:34px;height:34px;border-radius:11px;background:#f97316;color:#fff;display:grid;place-items:center;font:800 20px Manrope}
+.admin-brand small{font:800 9px 'DM Sans';letter-spacing:1.2px;color:#f97316;margin-left:3px}
+.admin-logout,.admin-refresh{border:1px solid #e8e8e8;background:#fff;border-radius:10px;padding:9px 13px;color:#555;cursor:pointer;font:600 12px 'DM Sans'}
+.admin-wrap{max-width:1180px;margin:auto;padding:34px 22px 60px}
+.admin-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.admin-heading h1,.admin-login h1{font:800 30px Manrope;margin:5px 0}
+.admin-kicker{font-size:10px;letter-spacing:1.6px;font-weight:800;color:#f97316;margin:0}
+.admin-muted{font-size:13px;color:#888;margin:7px 0}
+.admin-stat{background:#fff;border:1px solid #eee;border-radius:15px;padding:13px 20px;min-width:120px;text-align:center}
+.admin-stat strong{display:block;font:800 24px Manrope;color:#f97316}
+.admin-stat span{font-size:11px;color:#888}
+.admin-panel{background:#fff;border:1px solid #ececec;border-radius:16px;padding:19px;margin-bottom:18px;min-width:0}
+.admin-panel-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.admin-panel-title h2{font:800 16px Manrope;margin:0 0 5px}
+.admin-panel-title p{font-size:11px;color:#888;margin:0}
+.admin-status{font-size:10px;padding:6px 9px;border-radius:20px;background:#fff1e9;color:#e35c0b;white-space:nowrap}
+.admin-status.on{background:#eaf8ef;color:#21834b}
+.admin-key-form{display:flex;gap:9px}
+.admin-key-form input,.admin-login input{flex:1;min-width:0;border:1px solid #e7e7e7;border-radius:10px;padding:12px;font:13px 'DM Sans';outline:none}
+.admin-key-form input:focus,.admin-login input:focus{border-color:#f97316}
+.admin-key-form button,.admin-login form button{border:0;border-radius:10px;background:#f97316;color:white;padding:0 16px;font:700 12px 'DM Sans';cursor:pointer}
+.admin-key-form button:disabled,.admin-login form button:disabled{opacity:.5}
+.admin-columns{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr);gap:18px;align-items:start}
+.admin-session-list{display:flex;flex-direction:column;gap:7px;max-height:560px;overflow:auto}
+.admin-session{width:100%;text-align:left;border:1px solid #eee;background:#fff;border-radius:10px;padding:12px;cursor:pointer;color:#333}
+.admin-session.active{border-color:#f97316;background:#fff8f3}
+.admin-session b{display:block;font-size:12px;overflow-wrap:anywhere}
+.admin-session small{display:block;color:#999;font-size:10px;margin-top:6px}
+.admin-message-list{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow:auto}
+.admin-message{padding:12px;border-radius:12px;background:#f5f5f5;max-width:100%}
+.admin-message.user{background:#fff2e8;border:1px solid #ffe2cf}
+.admin-message b{font-size:10px;color:#f97316}
+.admin-message p{font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+.admin-message small{font-size:9px;color:#999}
+.admin-empty{font-size:12px;color:#999;text-align:center;padding:30px 8px}
+.admin-footnote{font-size:10px;color:#999;text-align:center;line-height:1.5}
+.admin-notice{background:#fff4e9;border:1px solid #ffdfc4;color:#9a4b12;padding:10px 12px;border-radius:10px;font-size:12px;margin:12px 0}
+.admin-login{width:min(390px,calc(100% - 36px));margin:12vh auto 0;background:#fff;border:1px solid #eee;border-radius:20px;padding:28px;box-shadow:0 16px 45px #00000008}
+.admin-logo{width:44px;height:44px;font-size:24px;margin-bottom:18px}
+.admin-login form{display:flex;flex-direction:column;gap:10px;margin:20px 0}
+.admin-login form button{padding:13px}
+.admin-login>a{font-size:11px;color:#f97316;text-decoration:none}
+@media(max-width:720px){.admin-wrap{padding:24px 14px 45px}.admin-columns{grid-template-columns:1fr}.admin-heading h1{font-size:25px}.admin-key-form{flex-direction:column}.admin-key-form button{padding:13px}.admin-panel{padding:15px}}
