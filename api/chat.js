@@ -1,4 +1,5 @@
 import { sbFetch } from '../lib/supabase.js';
+import { decryptSecret } from '../lib/secret-box.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
     const history = await sbFetch('ibalz_chat_messages?select=role,content&session_id=eq.' + encodeURIComponent(sessionId) + '&order=created_at.desc&limit=20');
     const messages = (history || []).reverse();
     const settings = await sbFetch('ibalz_settings?select=value&key=eq.groq_api_key&limit=1');
-    const key = settings?.[0]?.value || process.env.GROQ_API_KEY;
+    const key = (settings?.[0]?.value ? decryptSecret(settings[0].value) : '') || process.env.GROQ_API_KEY;
     if (!key) return res.status(503).json({ error: 'API key belum ditetapkan. Admin perlu masukkan Groq API Key di /admin.', sessionId });
 
     const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
