@@ -48,3 +48,33 @@
 .admin-login form button{padding:13px}
 .admin-login>a{font-size:11px;color:#f97316;text-decoration:none}
 @media(max-width:720px){.admin-wrap{padding:24px 14px 45px}.admin-columns{grid-template-columns:1fr}.admin-heading h1{font-size:25px}.admin-key-form{flex-direction:column}.admin-key-form button{padding:13px}.admin-panel{padding:15px}}
+
+/* IBalz chat upgrade: history drawer, image attach and refined controls */
+.top-action{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);font:700 11px 'DM Sans';cursor:pointer;display:flex;align-items:center;gap:7px}
+.top-action:first-child{color:var(--orange)}
+.top-action.new-action{background:var(--orange);border-color:var(--orange);color:#fff}
+.attach{width:40px;height:40px;flex:0 0 40px;border:1px solid var(--line);border-radius:13px;background:var(--soft);color:var(--orange);font-size:25px;line-height:1;cursor:pointer}
+.composer{gap:9px}
+.image-preview{display:flex;align-items:center;gap:11px;padding:9px 12px;margin:0 0 9px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.image-preview img{width:48px;height:48px;object-fit:cover;border-radius:9px}
+.image-preview div{min-width:0;flex:1}
+.image-preview b,.image-preview small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.image-preview b{font-size:11px}.image-preview small{font-size:10px;color:var(--muted);margin-top:3px}
+.image-preview button{border:0;background:transparent;color:var(--muted);font-size:23px;cursor:pointer}
+.history-backdrop{position:fixed;inset:0;z-index:20;background:#0008;display:flex;justify-content:flex-start}
+.history-drawer{width:min(360px,88vw);height:100%;background:var(--bg);color:var(--text);padding:22px 17px;display:flex;flex-direction:column;box-shadow:15px 0 50px #0002;animation:drawerIn .2s ease}
+@keyframes drawerIn{from{transform:translateX(-20px);opacity:.6}to{transform:translateX(0);opacity:1}}
+.history-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.history-head small{font-size:9px;letter-spacing:1.5px;color:var(--orange);font-weight:800}
+.history-head h2{font:800 23px Manrope;margin:4px 0}
+.history-head button{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-size:22px;cursor:pointer}
+.history-new{width:100%;padding:12px;border:0;border-radius:12px;background:var(--orange);color:#fff;font:700 12px 'DM Sans';cursor:pointer;margin-bottom:10px}
+.history-search{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--text);font:12px 'DM Sans';outline:none;margin-bottom:12px}
+.history-items{flex:1;overflow:auto;display:flex;flex-direction:column;gap:7px}
+.history-item{width:100%;text-align:left;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--bg);color:var(--text);cursor:pointer}
+.history-item.selected{border-color:var(--orange);background:var(--soft)}
+.history-item b,.history-item small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-item b{font-size:12px}.history-item small{font-size:10px;color:var(--muted);margin-top:6px}
+.history-empty{font-size:12px;color:var(--muted);text-align:center;padding:25px 8px}
+.history-foot{font-size:10px;color:var(--muted);text-align:center;padding-top:12px;border-top:1px solid var(--line)}
+@media(max-width:520px){.top-action{width:38px;padding:0;justify-content:center;font-size:17px}.top-action span{display:none}.actions{gap:6px}.attach{width:38px;flex-basis:38px}.composer{padding:8px}}
