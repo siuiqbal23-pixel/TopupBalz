@@ -15,7 +15,28 @@ function readHistory() {
 }
 function titleFor(messages) {
   const first = messages.find(m => m.role === 'user');
-  return (first?.content || 'Perbualan baharu').replace(/^\[Gambar dilampirkan\]\s*/, '').slice(0, 48) || 'Perbualan bergambar';
+  const raw = String(first?.content || '').replace(/\[Gambar dilampirkan\]/g, '').trim();
+  if (!raw) return 'Pertanyaan tentang gambar';
+  const q = raw.toLowerCase();
+  const topics = [
+    [/\b(resit|receipt|semakan|check resit)\b/, 'Semakan resit'],
+    [/\b(refund|pulangkan|duit balik|bayaran balik)\b/, 'Permintaan refund'],
+    [/\b(top ?up|topup|tambah nilai|reload)\b/, 'Pertanyaan topup'],
+    [/\b(harga|berapa|price|kos|rm\s*\d)\b/, 'Pertanyaan harga'],
+    [/\b(bayar|payment|pembayaran|transaksi|duit|tng|touch ?n ?go)\b/, 'Masalah pembayaran'],
+    [/\b(login|log masuk|kata laluan|password|akaun|account)\b/, 'Masalah akaun'],
+    [/\b(daftar|register|sign ?up|buat akaun)\b/, 'Pendaftaran akaun'],
+    [/\b(promo|promosi|diskaun|voucher|kupon)\b/, 'Pertanyaan promosi'],
+    [/\b(free fire|ff|mobile legends|mlbb|pubg|efootball|hok|honor of kings)\b/, 'Pertanyaan game'],
+    [/\b(error|ralat|tak boleh|tidak boleh|gagal|problem|masalah|bug)\b/, 'Bantuan masalah teknikal'],
+    [/\b(website|web|laman|link|pautan)\b/, 'Pertanyaan laman web']
+  ];
+  const match = topics.find(([pattern]) => pattern.test(q));
+  if (match) return match[1];
+  const cleaned = raw.replace(/^(hai|hi|hello|assalamualaikum)[,!. ]*/i, '').replace(/[?!.]+$/g, '').replace(/\s+/g, ' ').trim();
+  if (!cleaned) return 'Pertanyaan pelanggan';
+  const words = cleaned.split(' ').slice(0, 5).join(' ');
+  return words.length > 38 ? words.slice(0, 35).trimEnd() + '…' : words;
 }
 function ActionIcon({ name }) {
   const common = { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
@@ -230,7 +251,7 @@ function App() {
       <div className="history-head"><div><small>IBALZ AI</small><h2>Sejarah chat</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
       <button className="history-new" onClick={startNew}>＋ Chat baharu</button>
       <input className="history-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari perbualan..."/>
-      <div className="history-items">{visibleChats.length ? visibleChats.map(c => <button key={c.id} className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => openChat(c)}><b>{c.title || 'Perbualan baharu'}</b><small>{new Date(c.updatedAt).toLocaleString('ms-MY')}</small></button>) : <p className="history-empty">Belum ada sejarah chat pada peranti ini.</p>}</div>
+      <div className="history-items">{visibleChats.length ? visibleChats.map(c => <button key={c.id} className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => openChat(c)}><b>{c.title || 'Perbualan baharu'}</b></button>) : <p className="history-empty">Belum ada sejarah chat pada peranti ini.</p>}</div>
       <p className="history-foot">Sejarah ini disimpan dalam pelayar peranti anda.</p>
     </aside></div>}
   </div>;
