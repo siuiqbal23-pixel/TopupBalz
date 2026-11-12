@@ -18,12 +18,12 @@ function titleFor(messages) {
   return (first?.content || 'Perbualan baharu').replace(/^\[Gambar dilampirkan\]\s*/, '').slice(0, 48) || 'Perbualan bergambar';
 }
 function renderMessage(content) {
-  const parts = String(content || '').split(/(\\*\\*[^*]+?\\*\\*|__[^_]+?__|\\*[^*\\n]+?\\*|_[^_\\n]+?_)/g);
+  const parts = String(content || '').split(/(\*\*[^*]+?\*\*|__[^_]+?__|\*[^*\n]+?\*|_[^_\n]+?_)/g);
   return parts.map((part, index) => {
     if ((part.startsWith('**') && part.endsWith('**')) || (part.startsWith('__') && part.endsWith('__'))) {
       return <strong key={index}>{part.slice(2, -2)}</strong>;
     }
-    if (part.startsWith('*') && part.endsWith('*') || part.startsWith('_') && part.endsWith('_')) {
+    if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
       return <em key={index}>{part.slice(1, -1)}</em>;
     }
     return part;
