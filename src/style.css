@@ -125,3 +125,12 @@
 .msg.user .bubble{background:var(--orange);border-color:var(--orange);color:#211b16}
 .send,.top-action.new-action,.history-new{background:var(--orange);border-color:var(--orange);color:#211b16}
 .admin-key-form button,.admin-login form button{background:#e7b98d;color:#211b16}
+
+
+/* Brighter warm orange paired with near-black text */
+.app{--orange:#f4a261;--soft:#fff0df;--panel:#fff8f1}
+.app.dark{--orange:#f4a261;--soft:#3a2a1d;--panel:#26211d}
+.mark{background:#f4a261;color:#171717}
+.msg.user .bubble{background:#f4a261;border-color:#f4a261;color:#171717}
+.send,.top-action.new-action,.history-new{background:#f4a261;border-color:#f4a261;color:#171717}
+.attach{background:var(--soft);color:#171717}
