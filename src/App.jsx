@@ -29,7 +29,7 @@ function App() {
   const [input, setInput] = useState('');
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);\n  const [moreOpen, setMoreOpen] = useState(false);\n  const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -62,7 +62,7 @@ function App() {
     if (chat.sessionId) localStorage.setItem('ibalz-chat-session', chat.sessionId); else localStorage.removeItem('ibalz-chat-session');
     localStorage.setItem('ibalz-chat', JSON.stringify(chat.messages || starter));
     localStorage.setItem('ibalz-active-chat', chat.id);
-    setImage(''); setImageName(''); setError(''); setHistoryOpen(false);
+    setImage(''); setImageName(''); setError(''); setHistoryOpen(false); setMoreOpen(false); setNewMenuOpen(false);
   }
   function chooseImage(file) {
     if (!file) return;
@@ -105,11 +105,15 @@ function App() {
   const visibleChats = chats.filter(c => (c.title || '').toLowerCase().includes(search.toLowerCase()));
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top">
+      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setMoreOpen(false); setNewMenuOpen(false); }} title="Buka sejarah chat" aria-label="Buka menu"><span/><span/><span/></button>
       <div className="brand"><div className="mark">B<span>✦</span></div><div><b>IBalz</b><small>AI assistant</small></div></div>
       <div className="actions">
-        <button className="top-action" onClick={() => setHistoryOpen(true)} title="Sejarah chat">☷ <span>Sejarah</span></button>
-        <button className="top-action new-action" onClick={startNew} title="Chat baharu">＋ <span>Baharu</span></button>
-        <button className="iconbtn theme" onClick={() => setDark(v => { const n = !v; localStorage.setItem('ibalz-theme', n ? 'dark' : 'light'); return n; })} title="Tukar tema">{dark ? '☀' : '☾'}</button>
+        <div className="popup-anchor"><button className="top-action new-action" onClick={() => { setNewMenuOpen(v => !v); setMoreOpen(false); }} title="Mesej baharu">＋ <span>Mesej baharu</span></button>
+          {newMenuOpen && <div className="top-popup new-popup"><button onClick={startNew}><span>＋</span><div><b>Mesej baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
+        </div>
+        <div className="popup-anchor"><button className="iconbtn more-btn" onClick={() => { setMoreOpen(v => !v); setNewMenuOpen(false); }} title="Lagi pilihan" aria-label="Lagi pilihan">•••</button>
+          {moreOpen && <div className="top-popup more-popup"><button onClick={() => { setHistoryOpen(true); setMoreOpen(false); }}>☷ <div><b>Sejarah chat</b><small>Lihat perbualan terdahulu</small></div></button><button onClick={() => { setDark(v => { const n = !v; localStorage.setItem('ibalz-theme', n ? 'dark' : 'light'); return n; }); setMoreOpen(false); }}>{dark ? '☀' : '☾'} <div><b>{dark ? 'Mod cerah' : 'Mod gelap'}</b><small>Tukar penampilan IBalz</small></div></button></div>}
+        </div>
       </div>
     </header>
     <main className="shell">
