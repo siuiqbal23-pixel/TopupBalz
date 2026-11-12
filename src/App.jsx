@@ -29,7 +29,9 @@ function App() {
   const [input, setInput] = useState('');
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
-  const [historyOpen, setHistoryOpen] = useState(false);\n  const [moreOpen, setMoreOpen] = useState(false);\n  const [newMenuOpen, setNewMenuOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -86,7 +88,8 @@ function App() {
   async function send() {
     const text = input.trim();
     if ((!text && !image) || busy) return;
-    const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '\n[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
+    const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '
+[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
     const nextMessages = [...messages, userMessage];
     const currentId = activeId || uid();
     setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusy(true);
