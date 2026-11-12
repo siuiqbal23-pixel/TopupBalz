@@ -65,6 +65,7 @@ function App() {
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
   const [messageMenu, setMessageMenu] = useState(-1);
+  const [messageMenuPos, setMessageMenuPos] = useState({ top: 12, left: 12 });
   const [speaking, setSpeaking] = useState(-1);
   const end = useRef(null);
   const fileRef = useRef(null);
@@ -191,8 +192,8 @@ function App() {
             <button className={speaking === i ? 'chosen' : ''} title="Baca dengan suara" aria-label="Baca dengan suara" onClick={() => speakMessage(m.content, i)}><ActionIcon name="volume" /></button>
             <button title="Kongsi" aria-label="Kongsi" onClick={() => shareMessage(m.content)}><ActionIcon name="share" /></button>
             <div className="popup-anchor message-more-anchor">
-              <button title="Lagi" aria-label="Lagi" onClick={() => setMessageMenu(v => v === i ? -1 : i)}><ActionIcon name="more" /></button>
-              {messageMenu === i && <div className="top-popup message-more-popup">
+              <button title="Lagi" aria-label="Lagi" onClick={e => { if (messageMenu === i) { setMessageMenu(-1); return; } const r = e.currentTarget.getBoundingClientRect(); setMessageMenuPos({ top: Math.max(12, r.top - 88), left: Math.max(12, Math.min(r.left, window.innerWidth - 192)) }); setMessageMenu(i); }}><ActionIcon name="more" /></button>
+              {messageMenu === i && <div className="top-popup message-more-popup" style={{ position: "fixed", top: messageMenuPos.top, left: messageMenuPos.left, right: "auto", bottom: "auto" }}>
                 <button onClick={() => { setMessageMenu(-1); startNew(); }}><span><ActionIcon name="plus" /></span><div><b>Sembang baharu</b><small>Mulakan perbualan baharu</small></div></button>
                 <button onClick={retryAnswer} disabled={busy}><span><ActionIcon name="retry" /></span><div><b>Cuba semula</b><small>Jana semula jawapan terakhir</small></div></button>
               </div>}
