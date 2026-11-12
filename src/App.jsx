@@ -80,12 +80,10 @@ function App() {
     };
   }, [messageMenu]);
   const [speaking, setSpeaking] = useState(-1);
-  const end = useRef(null);
   const fileRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('ibalz-chat', JSON.stringify(messages));
-    end.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   useEffect(() => {
     if (!activeId || messages.length <= 1) return;
@@ -214,7 +212,6 @@ function App() {
           </div>}
         </div>)}
         {busy && <article className="msg assistant"><div className="bubble typing"><i/><i/><i/></div></article>}
-        <div ref={end}/>
       </section>
       {error && <div className="error">{error}</div>}
       {image && <div className="image-preview"><img src={image} alt="Pratonton gambar"/><div><b>{imageName}</b><small>Gambar sedia dihantar</small></div><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Buang gambar">×</button></div>}
