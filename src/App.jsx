@@ -81,9 +81,13 @@ function App() {
   }, [messageMenu]);
   const [speaking, setSpeaking] = useState(-1);
   const fileRef = useRef(null);
+  const chatRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('ibalz-chat', JSON.stringify(messages));
+    if (messages[messages.length - 1]?.role === 'user') {
+      requestAnimationFrame(() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }));
+    }
   }, [messages]);
   useEffect(() => {
     if (!activeId || messages.length <= 1) return;
@@ -193,7 +197,7 @@ function App() {
     </header>
     <main className="shell">
       {messages.length <= 1 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
-      <section className="chat">
+      <section className="chat" ref={chatRef}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
           <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content)}</div></article>
           {m.role === 'assistant' && <div className="message-tools">
