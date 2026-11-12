@@ -49,7 +49,9 @@ export default async function handler(req, res) {
         ],
       };
     }
-    const model = image ? (process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct') : (process.env.GROQ_MODEL || 'openai/gpt-oss-120b');
+    const configuredVisionModel = process.env.GROQ_VISION_MODEL;
+    const visionModel = configuredVisionModel && configuredVisionModel !== 'meta-llama/llama-4-scout-17b-16e-instruct' ? configuredVisionModel : 'qwen/qwen3.6-27b';
+    const model = image ? visionModel : (process.env.GROQ_MODEL || 'openai/gpt-oss-120b');
     const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
