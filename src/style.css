@@ -96,3 +96,12 @@
 .new-popup{width:235px}
 .more-popup{width:220px}
 @media(max-width:520px){.top{padding:0 12px;gap:9px}.brand{gap:7px}.brand b{font-size:16px}.brand small{font-size:10px}.actions{gap:6px}.top-action{width:38px;padding:0;justify-content:center;font-size:17px}.top-action span{display:none}.more-btn{font-size:13px}}
+
+
+/* Final chat layout: keep composer anchored neatly to the viewport bottom */
+.app{height:100dvh;min-height:100dvh;overflow:hidden}
+.shell{flex:1;min-height:0;padding:18px 0 max(8px,env(safe-area-inset-bottom))}
+.chat{flex:1;min-height:0;max-height:none;overscroll-behavior:contain}
+.composer{flex:0 0 auto;margin:0 0 2px}
+.image-preview{flex:0 0 auto}
+@media(max-width:520px){.shell{padding:12px 0 max(8px,env(safe-area-inset-bottom))}.welcome{padding-top:8px;padding-bottom:8px}.chat{min-height:0;max-height:none}.composer{margin-bottom:2px}}
