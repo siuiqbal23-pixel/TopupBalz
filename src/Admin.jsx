@@ -62,7 +62,8 @@ export default function Admin() {
       const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({integration:'cloudflare', token:cloudflareToken}) });
       const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Gagal menyimpan Cloudflare Token.');
       setCloudflareToken(''); setConfigured(v => ({ ...v, cloudflare: true }));
-      setNotice('Cloudflare Token berjaya disimpan. Account ID dikesan secara automatik.');
+      setProvider('cloudflare');
+      setNotice('Cloudflare Workers AI berjaya disimpan dan diaktifkan untuk chatbot serta penjanaan gambar.');
     } catch (e) { setNotice(e.message); }
     finally { setBusyKey(false); }
   }
