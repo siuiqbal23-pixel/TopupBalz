@@ -188,7 +188,8 @@ function App() {
   }
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
-    const savedMessages = messages.map(({ imageData, ...message }) => message);\n    const current = { id: activeId, sessionId, title: titleFor(messages), messages: savedMessages, updatedAt: new Date().toISOString() };
+    const savedMessages = messages.map(({ imageData, ...message }) => message);
+    const current = { id: activeId, sessionId, title: titleFor(messages), messages: savedMessages, updatedAt: new Date().toISOString() };
     setChats(old => {
       const next = [current, ...old.filter(c => c.id !== activeId)].slice(0, 80);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
