@@ -27,8 +27,15 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       if (req.body?.integration === 'cloudflare') {
         const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
-        const accountId = typeof req.body?.accountId === 'string' ? req.body.accountId.trim() : '';
-        if (token.length < 12 || token.length > 2000 || !/^[a-f0-9]{32}$/i.test(accountId)) return res.status(400).json({ error: 'Cloudflare Token atau Account ID tidak sah.' });
+        if (token.length < 12 || token.length > 2000) return res.status(400).json({ error: 'Cloudflare API Token tidak sah.' });
+        const accountResponse = await fetch('https://api.cloudflare.com/client/v4/accounts?per_page=1', {
+          headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        });
+        const accountData = await accountResponse.json().catch(() => ({}));
+        const accountId = accountData?.result?.[0]?.id;
+        if (!accountResponse.ok || !accountData?.success || !/^[a-f0-9]{32}$/i.test(accountId || '')) {
+          return res.status(400).json({ error: 'Cloudflare tak dapat mengesan Account ID. Token perlu ada permission Account: Read dan Workers AI: Read/Edit.' });
+        }
         await sbFetch('ibalz_settings?on_conflict=key', {
           method: 'POST',
           headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
