@@ -86,7 +86,12 @@ function renderMessage(content, copyCode) {
   return output.length ? output : renderInline(source, 'plain');
 }
 
-function isImageRequest(text) {\n  return /(?:jana|hasilkan|buat(?:kan)?|cipta|lukis|generate|create|draw)\\b[\\s\\S]{0,100}\\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\\b/i.test(text) || /\\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\\b[\\s\\S]{0,100}\\b(?:jana|hasilkan|buat|cipta|lukis|generate|create|draw)\\b/i.test(text);\n}\n\nfunction App() {
+function isImageRequest(text) {
+  return /(?:jana|hasilkan|buat(?:kan)?|cipta|lukis|generate|create|draw)\b[\s\S]{0,100}\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\b/i.test(text)
+    || /\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\b[\s\S]{0,100}\b(?:jana|hasilkan|buat|cipta|lukis|generate|create|draw)\b/i.test(text);
+}
+
+function App() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [chats, setChats] = useState(readHistory);
