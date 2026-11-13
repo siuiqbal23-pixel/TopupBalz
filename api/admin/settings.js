@@ -42,6 +42,7 @@ export default async function handler(req, res) {
           body: JSON.stringify([
             { key: 'cloudflare_api_token', value: encryptSecret(token), updated_at: new Date().toISOString() },
             { key: 'cloudflare_account_id', value: encryptSecret(accountId), updated_at: new Date().toISOString() },
+            { key: 'active_ai_provider', value: 'cloudflare', updated_at: new Date().toISOString() },
           ]),
         });
         return res.status(200).json({ ok: true, integration: 'cloudflare' });
