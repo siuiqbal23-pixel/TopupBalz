@@ -224,3 +224,7 @@
 .history-context-menu button{width:100%;padding:10px 9px;border:0;border-radius:8px;background:transparent;color:var(--text);text-align:left;font:600 11px 'DM Sans';cursor:pointer}
 .history-context-menu button:hover{background:var(--soft)}
 .history-context-menu button.danger{color:#dc5555}
+
+
+/* Generated image display */
+.generated-image{display:block;width:min(100%,560px);height:auto;max-height:70vh;object-fit:contain;margin:12px 0 4px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
