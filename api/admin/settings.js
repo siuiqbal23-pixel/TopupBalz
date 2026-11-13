@@ -44,6 +44,20 @@ export default async function handler(req, res) {
       const value = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
       if (!settingKey) return res.status(400).json({ error: 'Penyedia AI tidak disokong.' });
       if (value.length < 12 || value.length > 2000) return res.status(400).json({ error: 'API Key tidak sah.' });
+      const validationUrl = provider === 'groq'
+        ? 'https://api.groq.com/openai/v1/models'
+        : provider === 'openai'
+          ? 'https://api.openai.com/v1/models'
+          : 'https://generativelanguage.googleapis.com/v1beta/models';
+      const validationHeaders = provider === 'gemini'
+        ? { 'x-goog-api-key': value }
+        : { Authorization: 'Bearer ' + value };
+      const check = await fetch(validationUrl, { headers: validationHeaders });
+      if (!check.ok) {
+        if (check.status === 401 || check.status === 403) return res.status(400).json({ error: 'API Key ' + provider.toUpperCase() + ' ditolak. Semak key yang betul dan pastikan ia aktif.' });
+        const checkData = await check.json().catch(() => ({}));
+        return res.status(400).json({ error: checkData?.error?.message || 'Tidak dapat mengesahkan API Key ' + provider.toUpperCase() + '.' });
+      }
       await sbFetch('ibalz_settings?on_conflict=key', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
