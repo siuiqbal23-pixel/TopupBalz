@@ -86,7 +86,7 @@ function renderMessage(content, copyCode) {
   return output.length ? output : renderInline(source, 'plain');
 }
 
-function App() {
+function isImageRequest(text) {\n  return /(?:jana|hasilkan|buat(?:kan)?|cipta|lukis|generate|create|draw)\\b[\\s\\S]{0,100}\\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\\b/i.test(text) || /\\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\\b[\\s\\S]{0,100}\\b(?:jana|hasilkan|buat|cipta|lukis|generate|create|draw)\\b/i.test(text);\n}\n\nfunction App() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [chats, setChats] = useState(readHistory);
@@ -148,7 +148,7 @@ function App() {
   const [showJumpDown, setShowJumpDown] = useState(false);
 
   useEffect(() => {
-    sessionStorage.setItem('ibalz-chat', JSON.stringify(messages));
+    sessionStorage.setItem('ibalz-chat', JSON.stringify(messages.map(({ imageData, ...message }) => message)));
   }, [messages]);
   useEffect(() => {
     if (messages[messages.length - 1]?.role !== 'user') return;
@@ -183,7 +183,7 @@ function App() {
   }
   useEffect(() => {
     if (!activeId || messages.length === 0) return;
-    const current = { id: activeId, sessionId, title: titleFor(messages), messages, updatedAt: new Date().toISOString() };
+    const savedMessages = messages.map(({ imageData, ...message }) => message);\n    const current = { id: activeId, sessionId, title: titleFor(messages), messages: savedMessages, updatedAt: new Date().toISOString() };
     setChats(old => {
       const next = [current, ...old.filter(c => c.id !== activeId)].slice(0, 80);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
@@ -266,14 +266,24 @@ function App() {
     const currentId = activeId || uid();
     setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusy(true);
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content, image: image || undefined, sessionId, visitorId: getVisitorId() })
-      });
-      const data = await res.json();
-      if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
-      if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
-      setMessages(v => [...v, { role: 'assistant', content: data.reply }]);
+      if (!image && isImageRequest(text)) {
+        const res = await fetch('/api/images', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Tidak dapat menjana gambar.');
+        setMessages(v => [...v, { role: 'assistant', content: 'Imej berjaya dijana:', imageData: data.image }]);
+      } else {
+        const res = await fetch('/api/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMessage.content, image: image || undefined, sessionId, visitorId: getVisitorId() })
+        });
+        const data = await res.json();
+        if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
+        if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
+        setMessages(v => [...v, { role: 'assistant', content: data.reply }]);
+      }
     } catch (e) { setError(e.message || 'Tidak dapat menyambung.'); }
     finally { setBusy(false); }
   }
@@ -327,7 +337,7 @@ function App() {
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat" ref={chatRef} onScroll={handleChatScroll}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
-          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}</div></article>
+          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}{m.imageData && <img className="generated-image" src={m.imageData} alt="Gambar yang dijana oleh IBalz AI"/>}</div></article>
           {m.role === 'assistant' && <div className="message-tools">
             <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}><ActionIcon name="copy" /></button>
             <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}><ActionIcon name="like" /></button>
