@@ -1,22 +1,15 @@
 import { useEffect, useState } from 'react';
 
-const API_FIELDS = [
-  { id: 'groq', title: 'Groq API Key', hint: 'Untuk model chat dan pemahaman gambar.', placeholder: 'Tampal Groq API Key baharu' },
-  { id: 'cloudflare', title: 'Cloudflare API Token', hint: 'Token untuk servis Cloudflare Workers AI.', placeholder: 'Tampal Cloudflare API Token baharu' },
-  { id: 'cloudflareAccount', title: 'Cloudflare Account ID', hint: 'Account ID Cloudflare diperlukan bersama API Token.', placeholder: 'Masukkan Cloudflare Account ID' },
-  { id: 'gemini', title: 'Gemini API Key', hint: 'Untuk integrasi model Google Gemini apabila diaktifkan.', placeholder: 'Tampal Gemini API Key baharu' },
-  { id: 'openai', title: 'OpenAI API Key', hint: 'Untuk integrasi OpenAI apabila diaktifkan.', placeholder: 'Tampal OpenAI API Key baharu' },
-];
-
 export default function Admin() {
   const [password, setPassword] = useState('');
   const [logged, setLogged] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [apiKeys, setApiKeys] = useState({});
+  const [provider, setProvider] = useState('groq');
+  const [apiKey, setApiKey] = useState('');
   const [configured, setConfigured] = useState({});
-  const [busyKey, setBusyKey] = useState('');
+  const [busyKey, setBusyKey] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
 
@@ -27,7 +20,8 @@ export default function Admin() {
     ]);
     if (a.error || b.error) throw new Error(a.error || b.error);
     setSessions(a.sessions || []);
-    setConfigured(b.keys || { groq: Boolean(b.configured) });
+    setConfigured(b.providers || { groq: Boolean(b.configured) });
+    setProvider(b.activeProvider || 'groq');
     setLogged(true);
   }
   useEffect(() => { loadDashboard().catch(() => {}); }, []);
@@ -49,18 +43,17 @@ export default function Admin() {
       setMessages(d.messages || []);
     } catch (e) { setNotice(e.message); }
   }
-  async function saveKey(e, keyName) {
+  async function saveKey(e) {
     e.preventDefault();
-    const apiKey = apiKeys[keyName] || '';
-    setBusyKey(keyName); setNotice('');
+    setBusyKey(true); setNotice('');
     try {
-      const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({keyName, apiKey}) });
+      const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({provider, apiKey}) });
       const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Gagal menyimpan API key.');
-      setApiKeys(v => ({ ...v, [keyName]: '' }));
-      setConfigured(v => ({ ...v, [keyName]: true }));
-      setNotice(API_FIELDS.find(x => x.id === keyName)?.title + ' berjaya disimpan dengan selamat.');
+      setApiKey('');
+      setConfigured(v => ({ ...v, [provider]: true }));
+      setNotice('Penyedia AI dan API Key berjaya disimpan. IBalz AI kini menggunakan ' + provider.toUpperCase() + '.');
     } catch (e) { setNotice(e.message); }
-    finally { setBusyKey(''); }
+    finally { setBusyKey(false); }
   }
   async function logout() {
     await fetch('/api/admin/logout', {method:'POST'});
@@ -72,7 +65,7 @@ export default function Admin() {
   return <div className="admin-page"><header className="admin-top"><a className="admin-brand" href="/"> <span>B</span> IBalz <small>ADMIN</small></a><button className="admin-logout" onClick={logout}>Log keluar</button></header>
     <main className="admin-wrap"><div className="admin-heading"><div><p className="admin-kicker">CONTROL CENTER</p><h1>Dashboard</h1><p className="admin-muted">Urus sejarah perbualan dan semua tetapan API IBalz AI.</p></div><div className="admin-stat"><strong>{sessions.length}</strong><span>Sejarah chat</span></div></div>
     {notice&&<div className="admin-notice">{notice}</div>}
-    <section className="admin-panel"><div className="admin-panel-title"><div><h2>API Keys & Integrasi</h2><p>Setiap key disimpan secara encrypted di server. Nilai asal tidak dipaparkan semula. Masukkan key baharu bila-bila masa untuk menggantikan key lama.</p></div></div><div className="admin-api-grid">{API_FIELDS.map(field=><form className="admin-api-card" key={field.id} onSubmit={e=>saveKey(e, field.id)}><div className="admin-panel-title"><div><h3>{field.title}</h3><p>{field.hint}</p></div><span className={configured[field.id]?'admin-status on':'admin-status'}>{configured[field.id]?'Ditetapkan':'Belum ada'}</span></div><input type="password" value={apiKeys[field.id] || ''} onChange={e=>setApiKeys(v=>({...v,[field.id]:e.target.value}))} placeholder={field.placeholder} autoComplete="off"/><button disabled={busyKey===field.id || (apiKeys[field.id] || '').trim().length < 10}>{busyKey===field.id?'Menyimpan...':'Simpan / Ganti Key'}</button></form>)}</div></section>
+    <section className="admin-panel"><div className="admin-panel-title"><div><h2>Penyedia AI & API Key</h2><p>Satu ruangan sahaja untuk semua penyedia AI. Pilih penyedia, kemudian masukkan API Key yang sepadan. Key setiap penyedia diasingkan dengan selamat supaya tidak bercampur.</p></div></div><form className="admin-api-card" onSubmit={saveKey}><div className="admin-panel-title"><div><h3>Pilih penyedia AI</h3><p>IBalz AI akan menggunakan penyedia yang dipilih untuk chat.</p></div><span className={configured[provider]?'admin-status on':'admin-status'}>{configured[provider]?'Key tersedia':'Belum ada key'}</span></div><select value={provider} onChange={e=>setProvider(e.target.value)}><option value="groq">Groq</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select><input type="password" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={'Masukkan API Key '+provider.toUpperCase()} autoComplete="off"/><button disabled={busyKey || apiKey.trim().length < 12}>{busyKey?'Menyimpan...':'Simpan & Aktifkan AI'}</button></form><p className="admin-footnote">Nota: API Key Groq, OpenAI dan Gemini tetap disimpan berasingan di server. Menukar penyedia tidak akan mencampurkan atau menimpa key penyedia lain. Penjana gambar Cloudflare memerlukan token dan Account ID Cloudflare yang berasingan.</p></section>
     <div className="admin-columns"><section className="admin-panel"><div className="admin-panel-title"><div><h2>Sejarah Chat</h2><p>Perbualan yang dihantar ke IBalz.</p></div><button className="admin-refresh" onClick={()=>loadDashboard().catch(e=>setNotice(e.message))}>Muat semula</button></div><div className="admin-session-list">{sessions.length===0?<p className="admin-empty">Belum ada perbualan.</p>:sessions.map(s=><button key={s.id} className={'admin-session '+(selected?.id===s.id?'active':'')} onClick={()=>openChat(s)}><b>{s.title || 'Perbualan baharu'}</b><small>{new Date(s.updated_at).toLocaleString('ms-MY')} · {s.visitor_id.slice(0,12)}</small></button>)}</div></section>
     <section className="admin-panel admin-conversation"><div className="admin-panel-title"><div><h2>{selected?.title || 'Kandungan chat'}</h2><p>{selected?'ID sesi: '+selected.id:'Pilih perbualan di sebelah.'}</p></div></div><div className="admin-message-list">{!selected?<p className="admin-empty">Pilih satu chat untuk melihat mesej.</p>:messages.length===0?<p className="admin-empty">Tiada mesej.</p>:messages.map(m=><article key={m.id} className={'admin-message '+m.role}><b>{m.role==='user'?'Pengguna':'IBalz AI'}</b><p>{m.content}</p><small>{new Date(m.created_at).toLocaleString('ms-MY')}</small></article>)}</div></section></div>
     <p className="admin-footnote">Sejarah chat disimpan untuk fungsi kesinambungan dan semakan pentadbir. Jangan minta pengguna berkongsi kata laluan atau maklumat sensitif.</p></main></div>;
