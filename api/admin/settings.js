@@ -1,6 +1,6 @@
 import { isAdmin } from '../../lib/admin-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
-import { encryptSecret } from '../../lib/secret-box.js';
+import { encryptSecret, decryptSecret } from '../../lib/secret-box.js';
 
 const PROVIDER_KEYS = {
   groq: 'groq_api_key',
@@ -19,7 +19,7 @@ export default async function handler(req, res) {
       const activeRow = (rows || []).find(row => row.key === 'active_ai_provider');
       return res.status(200).json({
         configured: found.has('groq_api_key'),
-        providers: Object.fromEntries(Object.entries(PROVIDER_KEYS).map(([name, key]) => [name, found.has(key)])),
+        providers: { ...Object.fromEntries(Object.entries(PROVIDER_KEYS).map(([name, key]) => [name, found.has(key)])), cloudflare: found.has('cloudflare_api_token') && found.has('cloudflare_account_id') },
         activeProvider: activeRow?.value || 'groq',
         cloudflareConfigured: found.has('cloudflare_api_token') && found.has('cloudflare_account_id'),
       });
@@ -47,6 +47,18 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, integration: 'cloudflare' });
       }
       const provider = typeof req.body?.provider === 'string' ? req.body.provider : '';
+      if (provider === 'cloudflare') {
+        const current = await sbFetch('ibalz_settings?select=key,value&key=in.(cloudflare_api_token,cloudflare_account_id)');
+        const saved = Object.fromEntries((current || []).map(row => [row.key, row.value]));
+        if (!saved.cloudflare_api_token || !saved.cloudflare_account_id) return res.status(400).json({ error: 'Simpan Cloudflare Token dahulu di bahagian Cloudflare — Penjana Gambar.' });
+        const token = decryptSecret(saved.cloudflare_api_token);
+        const accountId = decryptSecret(saved.cloudflare_account_id);
+        const test = await fetch('https://api.cloudflare.com/client/v4/accounts/' + accountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Reply with OK' }], max_tokens: 8 }) });
+        const testData = await test.json().catch(() => ({}));
+        if (!test.ok || testData.success === false) return res.status(400).json({ error: testData?.errors?.[0]?.message || 'Cloudflare Workers AI tidak dapat diakses. Semak permission Workers AI pada token.' });
+        await sbFetch('ibalz_settings?on_conflict=key', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ key: 'active_ai_provider', value: 'cloudflare', updated_at: new Date().toISOString() }]) });
+        return res.status(200).json({ ok: true, provider: 'cloudflare' });
+      }
       const settingKey = PROVIDER_KEYS[provider];
       const value = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
       if (!settingKey) return res.status(400).json({ error: 'Penyedia AI tidak disokong.' });
