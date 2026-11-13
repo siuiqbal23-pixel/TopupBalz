@@ -8,8 +8,6 @@ export default function Admin() {
   const [messages, setMessages] = useState([]);
   const [provider, setProvider] = useState('groq');
   const [apiKey, setApiKey] = useState('');
-  const [cloudflareToken, setCloudflareToken] = useState('');
-  const [cloudflareAccountId, setCloudflareAccountId] = useState('');
   const [configured, setConfigured] = useState({});
   const [busyKey, setBusyKey] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -22,7 +20,7 @@ export default function Admin() {
     ]);
     if (a.error || b.error) throw new Error(a.error || b.error);
     setSessions(a.sessions || []);
-    setConfigured({ ...(b.providers || { groq: Boolean(b.configured) }), cloudflare: Boolean(b.cloudflareConfigured) });
+    setConfigured(b.providers || { groq: Boolean(b.configured) });
     setProvider(b.activeProvider || 'groq');
     setLogged(true);
   }
@@ -57,17 +55,6 @@ export default function Admin() {
     } catch (e) { setNotice(e.message); }
     finally { setBusyKey(false); }
   }
-  async function saveCloudflare(e) {
-    e.preventDefault(); setBusyKey(true); setNotice('');
-    try {
-      const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({integration:'cloudflare', token:cloudflareToken, accountId:cloudflareAccountId}) });
-      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Gagal menyimpan tetapan Cloudflare.');
-      setCloudflareToken(''); setCloudflareAccountId('');
-      setConfigured(v => ({ ...v, cloudflare: true }));
-      setNotice('Cloudflare berjaya disimpan. Penjana gambar boleh menggunakan Workers AI.');
-    } catch (e) { setNotice(e.message); }
-    finally { setBusyKey(false); }
-  }
   async function logout() {
     await fetch('/api/admin/logout', {method:'POST'});
     setLogged(false); setSelected(null); setMessages([]);
@@ -78,7 +65,7 @@ export default function Admin() {
   return <div className="admin-page"><header className="admin-top"><a className="admin-brand" href="/"> <span>B</span> IBalz <small>ADMIN</small></a><button className="admin-logout" onClick={logout}>Log keluar</button></header>
     <main className="admin-wrap"><div className="admin-heading"><div><p className="admin-kicker">CONTROL CENTER</p><h1>Dashboard</h1><p className="admin-muted">Urus sejarah perbualan dan semua tetapan API IBalz AI.</p></div><div className="admin-stat"><strong>{sessions.length}</strong><span>Sejarah chat</span></div></div>
     {notice&&<div className="admin-notice">{notice}</div>}
-    <section className="admin-panel"><div className="admin-panel-title"><div><h2>Penyedia AI & API Key</h2><p>Satu ruangan sahaja untuk semua penyedia AI. Pilih penyedia, kemudian masukkan API Key yang sepadan. Key setiap penyedia diasingkan dengan selamat supaya tidak bercampur.</p></div></div><form className="admin-api-card" onSubmit={saveKey}><div className="admin-panel-title"><div><h3>Pilih penyedia AI</h3><p>IBalz AI akan menggunakan penyedia yang dipilih untuk chat.</p></div><span className={configured[provider]?'admin-status on':'admin-status'}>{configured[provider]?'Key tersedia':'Belum ada key'}</span></div><select value={provider} onChange={e=>setProvider(e.target.value)}><option value="groq">Groq</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select><input type="password" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={'Masukkan API Key '+provider.toUpperCase()} autoComplete="off"/><button disabled={busyKey || apiKey.trim().length < 12}>{busyKey?'Menyimpan...':'Simpan & Aktifkan AI'}</button></form><div className="admin-api-card"><div className="admin-panel-title"><div><h3>Cloudflare — Penjana Gambar</h3><p>Masukkan Cloudflare API Token dan Account ID di sini. Ia berasingan daripada API Key chat AI.</p></div><span className={configured.cloudflare?"admin-status on":"admin-status"}>{configured.cloudflare?"Ditetapkan":"Belum ditetapkan"}</span></div><form onSubmit={saveCloudflare}><input type="password" value={cloudflareToken} onChange={e=>setCloudflareToken(e.target.value)} placeholder="Cloudflare API Token" autoComplete="off"/><input type="password" value={cloudflareAccountId} onChange={e=>setCloudflareAccountId(e.target.value)} placeholder="Cloudflare Account ID" autoComplete="off"/><button disabled={busyKey || cloudflareToken.trim().length < 12 || cloudflareAccountId.trim().length < 8}>{busyKey?"Menyimpan...":"Simpan Cloudflare"}</button></form></div><p className="admin-footnote">Nota: API Key Groq, OpenAI dan Gemini disimpan berasingan. Cloudflare Token dan Account ID digunakan khusus untuk penjana gambar.</p></section>
+    <section className="admin-panel"><div className="admin-panel-title"><div><h2>Penyedia AI & API Key</h2><p>Satu ruangan API Key sahaja. Pilih penyedia AI, kemudian masukkan key penyedia itu. Key disimpan berasingan supaya tidak bercampur.</p></div></div><form className="admin-api-card" onSubmit={saveKey}><div className="admin-panel-title"><div><h3>Pilih penyedia AI</h3><p>IBalz AI akan menggunakan penyedia yang dipilih untuk chat.</p></div><span className={configured[provider]?'admin-status on':'admin-status'}>{configured[provider]?'Key tersedia':'Belum ada key'}</span></div><select value={provider} onChange={e=>setProvider(e.target.value)}><option value="groq">Groq</option><option value="openai">OpenAI</option><option value="gemini">Google Gemini</option></select><input type="password" value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder={'Masukkan API Key '+provider.toUpperCase()} autoComplete="off"/><button disabled={busyKey || apiKey.trim().length < 12}>{busyKey?'Menyimpan...':'Simpan & Aktifkan AI'}</button></form><p className="admin-footnote">Nota: Satu ruangan API Key digunakan. Pilih penyedia dahulu; key akan disimpan khusus untuk penyedia tersebut dan tidak bercampur.</p></section>
     <div className="admin-columns"><section className="admin-panel"><div className="admin-panel-title"><div><h2>Sejarah Chat</h2><p>Perbualan yang dihantar ke IBalz.</p></div><button className="admin-refresh" onClick={()=>loadDashboard().catch(e=>setNotice(e.message))}>Muat semula</button></div><div className="admin-session-list">{sessions.length===0?<p className="admin-empty">Belum ada perbualan.</p>:sessions.map(s=><button key={s.id} className={'admin-session '+(selected?.id===s.id?'active':'')} onClick={()=>openChat(s)}><b>{s.title || 'Perbualan baharu'}</b><small>{new Date(s.updated_at).toLocaleString('ms-MY')} · {s.visitor_id.slice(0,12)}</small></button>)}</div></section>
     <section className="admin-panel admin-conversation"><div className="admin-panel-title"><div><h2>{selected?.title || 'Kandungan chat'}</h2><p>{selected?'ID sesi: '+selected.id:'Pilih perbualan di sebelah.'}</p></div></div><div className="admin-message-list">{!selected?<p className="admin-empty">Pilih satu chat untuk melihat mesej.</p>:messages.length===0?<p className="admin-empty">Tiada mesej.</p>:messages.map(m=><article key={m.id} className={'admin-message '+m.role}><b>{m.role==='user'?'Pengguna':'IBalz AI'}</b><p>{m.content}</p><small>{new Date(m.created_at).toLocaleString('ms-MY')}</small></article>)}</div></section></div>
     <p className="admin-footnote">Sejarah chat disimpan untuk fungsi kesinambungan dan semakan pentadbir. Jangan minta pengguna berkongsi kata laluan atau maklumat sensitif.</p></main></div>;
