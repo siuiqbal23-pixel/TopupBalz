@@ -86,7 +86,9 @@ export default async function handler(req, res) {
     }
 
     if (!upstream.ok) {
-      const detail = data?.error?.message || data?.error?.status || (provider.toUpperCase() + ' tidak dapat memproses permintaan.');
+      const detail = upstream.status === 401 || upstream.status === 403
+        ? 'API Key ' + provider.toUpperCase() + ' ditolak. Buka Admin, pilih penyedia yang sama dan simpan API Key yang sah.'
+        : (data?.error?.message || data?.error?.status || (provider.toUpperCase() + ' tidak dapat memproses permintaan.'));
       return res.status(502).json({ error: detail, sessionId });
     }
     if (!reply) return res.status(502).json({ error: 'Penyedia AI tidak memulangkan jawapan teks.', sessionId });
