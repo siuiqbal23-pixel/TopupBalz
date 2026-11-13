@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Sila log masuk sebagai admin.' });
   try {
     if (req.method === 'GET') {
-      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider'];
+      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider', 'cloudflare_api_token', 'cloudflare_account_id'];
       const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(' + keys.join(',') + ')');
       const found = new Set((rows || []).map(row => row.key));
       const activeRow = (rows || []).find(row => row.key === 'active_ai_provider');
@@ -21,9 +21,24 @@ export default async function handler(req, res) {
         configured: found.has('groq_api_key'),
         providers: Object.fromEntries(Object.entries(PROVIDER_KEYS).map(([name, key]) => [name, found.has(key)])),
         activeProvider: activeRow?.value || 'groq',
+        cloudflareConfigured: found.has('cloudflare_api_token') && found.has('cloudflare_account_id'),
       });
     }
     if (req.method === 'POST') {
+      if (req.body?.integration === 'cloudflare') {
+        const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+        const accountId = typeof req.body?.accountId === 'string' ? req.body.accountId.trim() : '';
+        if (token.length < 12 || token.length > 2000 || !/^[a-f0-9]{32}$/i.test(accountId)) return res.status(400).json({ error: 'Cloudflare Token atau Account ID tidak sah.' });
+        await sbFetch('ibalz_settings?on_conflict=key', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify([
+            { key: 'cloudflare_api_token', value: encryptSecret(token), updated_at: new Date().toISOString() },
+            { key: 'cloudflare_account_id', value: encryptSecret(accountId), updated_at: new Date().toISOString() },
+          ]),
+        });
+        return res.status(200).json({ ok: true, integration: 'cloudflare' });
+      }
       const provider = typeof req.body?.provider === 'string' ? req.body.provider : '';
       const settingKey = PROVIDER_KEYS[provider];
       const value = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
