@@ -34,13 +34,17 @@ export default async function handler(req, res) {
 
     const history = await sbFetch('ibalz_chat_messages?select=role,content&session_id=eq.' + encodeURIComponent(sessionId) + '&order=created_at.desc&limit=20');
     const messages = (history || []).reverse();
-    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key)');
+    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key,cloudflare_api_token,cloudflare_account_id)');
     const values = Object.fromEntries((settings || []).map(row => [row.key, row.value]));
     const provider = values.active_ai_provider || 'groq';
     const keyName = { groq: 'groq_api_key', openai: 'openai_api_key', gemini: 'gemini_api_key' }[provider];
-    if (!keyName) return res.status(500).json({ error: 'Penyedia AI aktif tidak sah. Semak tetapan admin.', sessionId });
-    const key = values[keyName] ? decryptSecret(values[keyName]) : '';
-    if (!key) return res.status(503).json({ error: 'API Key untuk ' + provider.toUpperCase() + ' belum ditetapkan. Admin perlu pilih penyedia dan simpan key di /admin.', sessionId });
+    if (!['groq', 'openai', 'gemini', 'cloudflare'].includes(provider)) return res.status(500).json({ error: 'Penyedia AI aktif tidak sah. Semak tetapan admin.', sessionId });
+    const key = keyName && values[keyName] ? decryptSecret(values[keyName]) : '';
+    const cloudflareToken = values.cloudflare_api_token ? decryptSecret(values.cloudflare_api_token) : '';
+    const cloudflareAccountId = values.cloudflare_account_id ? decryptSecret(values.cloudflare_account_id) : '';
+    if (provider === 'cloudflare' && (!cloudflareToken || !cloudflareAccountId)) return res.status(503).json({ error: 'Cloudflare Workers AI belum ditetapkan. Simpan Cloudflare Token di Admin dahulu.', sessionId });
+    if (provider !== 'cloudflare' && !key) return res.status(503).json({ error: 'API Key untuk ' + provider.toUpperCase() + ' belum ditetapkan. Admin perlu pilih penyedia dan simpan key di /admin.', sessionId });
+    if (provider === 'cloudflare' && image) return res.status(400).json({ error: 'Cloudflare Workers AI chat buat masa ini menerima teks sahaja. Gunakan fungsi penjanaan gambar untuk imej.', sessionId });
 
     const lastUser = [...messages].map((m, i) => ({ ...m, i })).reverse().find(m => m.role === 'user');
     if (image && lastUser) messages[lastUser.i] = {
@@ -52,7 +56,15 @@ export default async function handler(req, res) {
     };
 
     let upstream, data, reply = '';
-    if (provider === 'gemini') {
+    if (provider === 'cloudflare') {
+      upstream = await fetch('https://api.cloudflare.com/client/v4/accounts/' + cloudflareAccountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + cloudflareToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages], max_tokens: 1200 }),
+      });
+      data = await upstream.json();
+      reply = data.result?.response || data.result?.output || '';
+    } else if (provider === 'gemini') {
       const contents = messages.map(item => {
         const parts = typeof item.content === 'string' ? [{ text: item.content }] : item.content.map(part => {
           if (part.type === 'text') return { text: part.text };
@@ -85,10 +97,10 @@ export default async function handler(req, res) {
       reply = data.choices?.[0]?.message?.content || '';
     }
 
-    if (!upstream.ok) {
+    if (!upstream.ok || data?.success === false) {
       const detail = upstream.status === 401 || upstream.status === 403
-        ? 'API Key ' + provider.toUpperCase() + ' ditolak. Buka Admin, pilih penyedia yang sama dan simpan API Key yang sah.'
-        : (data?.error?.message || data?.error?.status || (provider.toUpperCase() + ' tidak dapat memproses permintaan.'));
+        ? (provider === 'cloudflare' ? 'Cloudflare Token ditolak atau tiada kebenaran Workers AI. Semak permission token.' : 'API Key ' + provider.toUpperCase() + ' ditolak. Buka Admin, pilih penyedia yang sama dan simpan API Key yang sah.')
+        : (data?.errors?.[0]?.message || data?.error?.message || data?.error?.status || (provider.toUpperCase() + ' tidak dapat memproses permintaan.'));
       return res.status(502).json({ error: detail, sessionId });
     }
     if (!reply) return res.status(502).json({ error: 'Penyedia AI tidak memulangkan jawapan teks.', sessionId });
