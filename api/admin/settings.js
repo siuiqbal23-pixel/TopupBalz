@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider'];
-      const rows = await sbFetch('ibalz_settings?select=key&key=in.(' + keys.join(',') + ')');
+      const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(' + keys.join(',') + ')');
       const found = new Set((rows || []).map(row => row.key));
       const activeRow = (rows || []).find(row => row.key === 'active_ai_provider');
       return res.status(200).json({
