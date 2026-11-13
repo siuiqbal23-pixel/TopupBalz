@@ -22,7 +22,7 @@ export default function Admin() {
     ]);
     if (a.error || b.error) throw new Error(a.error || b.error);
     setSessions(a.sessions || []);
-    setConfigured(b.providers || { groq: Boolean(b.configured) });
+    setConfigured({ ...(b.providers || { groq: Boolean(b.configured) }), cloudflare: Boolean(b.cloudflareConfigured) });
     setProvider(b.activeProvider || 'groq');
     setLogged(true);
   }
