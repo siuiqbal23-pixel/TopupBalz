@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ok:true,verified:true,message:'E-mel berjaya disahkan. Tekan Daftar untuk cipta akaun.'});
     }
     if (flow === 'signup') return res.status(400).json({error:'Sila sahkan e-mel dahulu sebelum daftar.'});
-    setUserCookie(res, verified.access_token);
+    setUserCookie(res, verified.access_token, verified.refresh_token);
     return res.status(200).json({ ok: true, verified: true, signedIn: true, user: { id: verified.user.id, email: verified.user.email } });
   } catch (error) {
     return res.status(400).json({ error: error.message || 'Pengesahan OTP gagal.' });
