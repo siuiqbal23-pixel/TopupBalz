@@ -336,3 +336,8 @@
 .auth-card form>button.auth-status-pending{background:#f8dfdc;color:#a52d25}
 .auth-card form>button.auth-status-ready{background:#d18a5c;color:#171717}
 .auth-card form>button.auth-status-done{background:#218c45;color:#fff;cursor:default}
+
+
+/* Official IBalz orange email confirmation button */
+.auth-card form>button.auth-status-pending,.auth-card form>button.auth-status-ready{background:#f4a261;color:#171717}
+.auth-card form>button.auth-status-pending:hover,.auth-card form>button.auth-status-ready:hover{background:#e99552}
