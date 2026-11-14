@@ -1,8 +1,22 @@
-import { currentUser } from '../../lib/user-auth.js';
+import { currentUser, authRequest } from '../../lib/user-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return res.status(405).json({ error: 'Method tidak dibenarkan.' }); }
+  if (req.method === 'POST') {
+    try {
+      if (String(req.body?.action || '') !== 'change_password') return res.status(400).json({ error: 'Tindakan tidak sah.' });
+      const user = await currentUser(req, res);
+      if (!user?.id || !user?.email) return res.status(401).json({ error: 'Sila log masuk semula.' });
+      const currentPassword = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
+      const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+      if (!currentPassword || newPassword.length < 8) return res.status(400).json({ error: 'Masukkan kata laluan semasa dan kata laluan baharu sekurang-kurangnya 8 aksara.' });
+      const verified = await authRequest('token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: user.email, password: currentPassword }) });
+      if (!verified.access_token) return res.status(401).json({ error: 'Kata laluan semasa tidak betul.' });
+      await authRequest('user', { method: 'PUT', headers: { Authorization: 'Bearer ' + verified.access_token }, body: JSON.stringify({ password: newPassword }) });
+      return res.status(200).json({ ok: true, message: 'Kata laluan berjaya ditukar.' });
+    } catch (error) { return res.status(400).json({ error: /invalid login credentials/i.test(error.message) ? 'Kata laluan semasa tidak betul.' : error.message || 'Gagal menukar kata laluan.' }); }
+  }
+  if (req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return res.status(405).json({ error: 'Method tidak dibenarkan.' }); }
   const user = await currentUser(req, res);
   if (!user?.id) return res.status(200).json({ authenticated: false });
   if (req.query?.history === '1') {
