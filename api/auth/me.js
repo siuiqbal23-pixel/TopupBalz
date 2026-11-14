@@ -23,6 +23,14 @@ export default async function handler(req, res) {
         });
         return res.status(200).json({ ok: true, enabled });
       }
+      if (action === 'update_memory_preference') {
+        const enabled = req.body?.enabled === true;
+        await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(user.id), {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ memory_enabled: enabled }),
+        });
+        return res.status(200).json({ ok: true, enabled });
+      }
       if (action === 'delete_account') {
         const currentPassword = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
         if (!currentPassword) return res.status(400).json({ error: 'Masukkan kata laluan untuk mengesahkan pemadaman.' });
@@ -55,7 +63,7 @@ export default async function handler(req, res) {
   if (!user?.id) return res.status(200).json({ authenticated: false });
   if (req.query?.export === '1') {
     try {
-      const profiles = await sbFetch('ibalz_user_profiles?select=username,email,created_at,improve_model_for_everyone&id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+      const profiles = await sbFetch('ibalz_user_profiles?select=username,email,created_at,improve_model_for_everyone,memory_enabled,memories&id=eq.' + encodeURIComponent(user.id) + '&limit=1');
       const sessions = await sbFetch('ibalz_chat_sessions?select=id,title,created_at,updated_at&user_id=eq.' + encodeURIComponent(user.id) + '&order=created_at.asc&limit=500');
       const conversations = [];
       for (const session of (sessions || [])) {
