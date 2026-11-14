@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method tidak dibenarkan.' });
   }
   try {
-    const user = await currentUser(req);
+    const user = await currentUser(req, res);
     if (!user?.id) return res.status(401).json({ error: 'Sila daftar atau Sign In dahulu untuk menggunakan IBalz AI.', code: 'AUTH_REQUIRED' });
     const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
     if (!prompt || prompt.length > 4000) return res.status(400).json({ error: 'Arahan gambar tidak sah atau terlalu panjang.' });
