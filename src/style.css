@@ -253,3 +253,21 @@
 .search-source-list a span{font-size:11px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
 .search-source-list a small{font-size:9px;color:var(--muted);overflow-wrap:anywhere}
 .search-source-list a:hover{border-color:var(--orange);background:var(--soft)}
+
+
+/* Compact expandable web source chips */
+.search-sources{margin:9px 0 2px;padding:0;border:0;background:transparent}
+.search-sources-heading{font-size:10px;font-weight:700;color:var(--muted);margin:0 0 7px}
+.search-source-list{display:flex;flex-direction:row;flex-wrap:wrap;gap:7px}
+.search-source{position:relative;min-width:0;max-width:100%}
+.search-source summary{list-style:none;display:flex;align-items:center;gap:7px;max-width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);cursor:pointer;font-size:10px}
+.search-source summary::-webkit-details-marker{display:none}
+.search-source summary img{width:17px;height:17px;object-fit:contain;border-radius:4px;flex:0 0 17px}
+.search-source summary span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.search-source .source-chevron{color:var(--muted);font-size:13px;margin-left:1px}
+.search-source[open] summary{border-color:var(--orange);background:var(--soft)}
+.search-source-info{display:flex;flex-direction:column;gap:5px;margin-top:5px;padding:10px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);max-width:min(270px,calc(100vw - 64px));box-shadow:0 5px 18px #0000000a}
+.search-source-info b{font-size:11px;line-height:1.4;overflow-wrap:anywhere}
+.search-source-info small{font-size:9px;color:var(--muted);overflow-wrap:anywhere}
+.search-source-info a{font-size:10px;font-weight:700;color:var(--text);text-decoration:none;margin-top:2px}
+.search-source-info a:hover{text-decoration:underline;color:var(--orange)}
