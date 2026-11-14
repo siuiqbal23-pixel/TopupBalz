@@ -46,8 +46,8 @@ export default function Auth() {
         if(!emailVerified) throw new Error('Sahkan e-mel dahulu sebelum daftar akaun.');
         await completeSignup();
       } else {
-        const d=await request('login',{email,password});
-        setEmail(d.email||email); setStage('otp'); setNotice(d.message||'Kod OTP log masuk dihantar ke e-mel.');
+        await request('login',{email,password});
+        location.href='/';
       }
     } catch(e) { setNotice(e.message); } finally { setBusy(false); }
   }
@@ -76,7 +76,7 @@ export default function Auth() {
       <label>Kata laluan<input type="password" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} placeholder="Sekurang-kurangnya 8 aksara" autoComplete={mode==='signup'?'new-password':'current-password'} required/></label>
       <label>Gmail / E-mel<input type="email" value={email} onChange={e=>{setEmail(e.target.value);setEmailVerified(false);setRegistered(false);}} placeholder="nama@gmail.com" autoComplete="email" required/></label>
       {mode==='signup'&&email&&<div className="auth-email-status"><span className={registered?'is-done':emailVerified?'is-verified':'is-pending'}>{registered?'✓':emailVerified?'✓':'✕'}</span><small>{registered?'Akaun telah didaftarkan':emailVerified?'E-mel telah disahkan':'E-mel belum disahkan'}</small></div>}
-      {mode==='signup'?<button type="button" className={registered?'auth-status-done':emailVerified?'auth-status-ready':'auth-status-pending'} onClick={emailVerified?completeSignup:sendEmailCode} disabled={busy||registered||!email||!username||password.length<8}>{busy?'Sila tunggu...':registered?'Akaun Didaftarkan':emailVerified?'Daftar':'Confirm Email · Hantar Kod'}</button>:<button disabled={busy}>{busy?'Sila tunggu...':'Sign In & Hantar OTP'}</button>}
+      {mode==='signup'?<button type="button" className={registered?'auth-status-done':emailVerified?'auth-status-ready':'auth-status-pending'} onClick={emailVerified?completeSignup:sendEmailCode} disabled={busy||registered||!email||!username||password.length<8}>{busy?'Sila tunggu...':registered?'Akaun Didaftarkan':emailVerified?'Daftar':'Sahkan Email Anda'}</button>:<button disabled={busy}>{busy?'Sila tunggu...':'Sign In & Hantar OTP'}</button>}
     </form>:<form onSubmit={verify}>
       <label>Kod OTP (8 digit)<input inputMode="numeric" autoComplete="one-time-code" maxLength={8} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,'').slice(0,8))} placeholder="12345678" required/></label>
       <button disabled={busy||otp.length!==8}>{busy?'Mengesahkan...':mode==='signup'?'Sahkan E-mel':'Sahkan OTP'}</button>
