@@ -124,16 +124,6 @@ export default function Admin() {
     } catch (e) { setNotice(e.message); }
     finally { setSavingInstruction(false); }
   }
-  async function clearAdminInstructions() {
-    if (!window.confirm('Padam semua arahan global AI yang telah disimpan?')) return;
-    setSavingInstruction(true); setNotice('');
-    try {
-      const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({integration:'admin_instructions', messages:[]}) });
-      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Gagal memadam arahan.');
-      setAdminInstructions([]); setNotice('Semua arahan global telah dipadam.');
-    } catch (e) { setNotice(e.message); }
-    finally { setSavingInstruction(false); }
-  }
   async function saveKey(e) {
     e.preventDefault();
     setBusyKey(true); setNotice('');
@@ -183,7 +173,7 @@ export default function Admin() {
   <form onSubmit={saveAdminInstruction} style={{display:'flex',flexDirection:'column',gap:10,marginTop:14,background:'#ffffff',padding:14,border:'1px solid #e5e7eb',borderRadius:16}}>
     <label style={{fontSize:13,fontWeight:600,color:'#374151'}}>Tulis arahan untuk semua pelanggan</label>
     <textarea value={instructionDraft} onChange={e=>setInstructionDraft(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();e.currentTarget.form?.requestSubmit();}}} rows={3} maxLength={4000} placeholder="Taip mesej arahan di sini..." style={{width:'100%',boxSizing:'border-box',resize:'vertical',padding:14,borderRadius:12,border:'1px solid #d1d5db',background:'#ffffff',color:'#111827',font:'inherit',outlineColor:'#f97316'}}/>
-    <div style={{display:'flex',gap:10,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}><small style={{color:'#6b7280'}}>Enter untuk hantar · Shift + Enter untuk baris baharu</small><div style={{display:'flex',gap:8}}><button type="button" className="admin-refresh" disabled={savingInstruction || !adminInstructions.length} onClick={clearAdminInstructions}>Padam semua</button><button type="submit" disabled={savingInstruction || !instructionDraft.trim()} style={{background:'#f97316',color:'#ffffff',border:0,borderRadius:10,padding:'10px 18px',fontWeight:700,cursor:'pointer'}}>{savingInstruction?'Menghantar...':'Hantar arahan ↑'}</button></div></div>
+    <div style={{display:'flex',gap:10,alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}><small style={{color:'#6b7280'}}>Enter untuk hantar · Shift + Enter untuk baris baharu</small><div style={{display:'flex',gap:8}}><button type="submit" disabled={savingInstruction || !instructionDraft.trim()} style={{background:'#f97316',color:'#ffffff',border:0,borderRadius:10,padding:'10px 18px',fontWeight:700,cursor:'pointer'}}>{savingInstruction?'Menghantar...':'Hantar arahan ↑'}</button></div></div>
   </form>
   <p className="admin-footnote">Setiap mesej yang dihantar disimpan sebagai arahan tetap. Semua pelanggan menggunakan panduan ini dalam chat dan penjanaan gambar. Arahan keselamatan sistem tetap diutamakan.</p>
 </section>}
