@@ -2,12 +2,13 @@ import { isAdmin } from '../../lib/admin-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
 const URL = process.env.SUPABASE_URL || 'https://evvquwzrqkmmpoeytssr.supabase.co';
 const KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ADMIN_HEADERS = KEY?.startsWith('sb_secret_') ? { apikey: KEY } : { apikey: KEY, Authorization: 'Bearer ' + KEY };
 export default async function handler(req, res) {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Sila log masuk sebagai admin.' });
   if (!KEY) return res.status(503).json({ error: 'SUPABASE_SECRET_KEY belum ditetapkan.' });
   try {
     if (req.method === 'GET') {
-      const response = await fetch(URL + '/auth/v1/admin/users?page=1&per_page=500', { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+      const response = await fetch(URL + '/auth/v1/admin/users?page=1&per_page=500', { headers: ADMIN_HEADERS });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || data.msg || 'Tidak dapat membaca akaun pengguna.');
       const profiles = await sbFetch('ibalz_user_profiles?select=id,username,email,created_at&limit=500');
@@ -21,7 +22,7 @@ export default async function handler(req, res) {
       const sessions = await sbFetch('ibalz_chat_sessions?select=id&user_id=eq.' + encodeURIComponent(id));
       for (const session of (sessions || [])) await sbFetch('ibalz_chat_messages?session_id=eq.' + encodeURIComponent(session.id), { method: 'DELETE' });
       await sbFetch('ibalz_chat_sessions?user_id=eq.' + encodeURIComponent(id), { method: 'DELETE' });
-      const response = await fetch(URL + '/auth/v1/admin/users/' + encodeURIComponent(id), { method: 'DELETE', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } });
+      const response = await fetch(URL + '/auth/v1/admin/users/' + encodeURIComponent(id), { method: 'DELETE', headers: ADMIN_HEADERS });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || data.msg || 'Gagal memadam akaun.');
       return res.status(200).json({ ok: true });
