@@ -1,5 +1,6 @@
 import { sbFetch } from '../lib/supabase.js';
 import { decryptSecret } from '../lib/secret-box.js';
+import { currentUser } from '../lib/user-auth.js';
 
 const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Guna gaya bahasa yang sama dengan pengguna. Jika pengguna guna bahasa Melayu santai, slanga Malaysia atau bahasa pasar seperti wei, weh, bro, kau, aku, balas secara santai dan semula jadi; jangan tiba-tiba guna bahasa baku atau gaya ensiklopedia. Untuk sapaan ringkas seperti wei/hi/hello, balas ringkas dan mesra, contohnya: Weii, ada apa? Jangan huraikan maksud perkataan sapaan. Jangan beri senarai makna yang tidak diminta. Balas dalam bahasa yang digunakan pengguna. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
 
@@ -13,6 +14,7 @@ export default async function handler(req, res) {
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     const image = typeof body.image === 'string' ? body.image : '';
     const visitorId = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 80) : '';
+    const signedInUser = await currentUser(req);
     let sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
     if (!message || message.length > 10000 || !visitorId) return res.status(400).json({ error: 'Mesej tidak sah atau kosong.' });
     if (image && (!/^data:image\/(jpeg|png|webp|gif);base64,/.test(image) || image.length > 3500000)) {
@@ -22,10 +24,12 @@ export default async function handler(req, res) {
     if (!sessionId) {
       const created = await sbFetch('ibalz_chat_sessions', {
         method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ visitor_id: visitorId, title: message.replace(/\[Gambar dilampirkan\]/g, '').slice(0, 70) || 'Perbualan bergambar' }),
+        body: JSON.stringify({ visitor_id: visitorId, user_id: signedInUser?.id || null, user_email: signedInUser?.email || null, title: message.replace(/\[Gambar dilampirkan\]/g, '').slice(0, 70) || 'Perbualan bergambar' }),
       });
       sessionId = created?.[0]?.id;
       if (!sessionId) throw new Error('Tidak dapat mencipta sesi chat.');
+    } else if (signedInUser) {
+      await sbFetch('ibalz_chat_sessions?id=eq.' + encodeURIComponent(sessionId), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: signedInUser.id, user_email: signedInUser.email }) });
     }
     await sbFetch('ibalz_chat_messages', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
