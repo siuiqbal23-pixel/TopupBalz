@@ -47,11 +47,11 @@ export default async function handler(req, res) {
     if (provider === 'cloudflare' && image) return res.status(400).json({ error: 'Cloudflare Workers AI chat buat masa ini menerima teks sahaja. Gunakan fungsi penjanaan gambar untuk imej.', sessionId });
 
     // Elakkan carian untuk sapaan, sembang ringkas dan mesej sosial biasa.
-    const normalizedMessage = message.toLowerCase().replace(/[^\\p{L}\\p{N}\\s]/gu, ' ').replace(/\\s+/g, ' ').trim();
+    const normalizedMessage = message.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
     const casualMessages = new Set(['wei','weii','weh','woi','oi','bro','hello','helo','hai','hi','hey','yo','assalamualaikum','salam','ok','okay','oke','baik','haha','hahaha','lol','test','testing','terima kasih','thanks','tq','bye','jumpa lagi']);
     const isCasualMessage = normalizedMessage.length <= 35 && (casualMessages.has(normalizedMessage) || /^(wei+|weh+|woi+|oi+|bro+|hai+|hello+|hi+|hey+)[ ]*$/i.test(normalizedMessage));
-    const asksForSearch = /\\b(cari|search|google|sumber|rujukan|terkini|terbaru|sekarang|hari ini|minggu ini|tahun ini|202[5-9]|harga|berapa harga|jadual|keputusan|berita|update|status terkini)\\b/i.test(normalizedMessage);
-    const asksFactualQuestion = /\\b(apa maksud|maksud|makna|erti|apa itu|siapa|kenapa|mengapa|bila|tarikh|di mana|kat mana|bagaimana|macam mana|berapa|adakah|betul ke|benarkah)\\b/i.test(normalizedMessage);
+    const asksForSearch = /\b(cari|search|google|sumber|rujukan|terkini|terbaru|sekarang|hari ini|minggu ini|tahun ini|202[5-9]|harga|berapa harga|jadual|keputusan|berita|update|status terkini)\b/i.test(normalizedMessage);
+    const asksFactualQuestion = /\b(apa maksud|maksud|makna|erti|apa itu|siapa|kenapa|mengapa|bila|tarikh|di mana|kat mana|bagaimana|macam mana|berapa|adakah|betul ke|benarkah)\b/i.test(normalizedMessage);
     const shouldUseGoogleSearch = !isCasualMessage && (asksForSearch || asksFactualQuestion || message.length > 100);
 
     // Let Gemini decide whether Google Search can improve this answer.
@@ -76,8 +76,8 @@ export default async function handler(req, res) {
           const groundedText = candidate?.content?.parts?.map(part => part.text || '').join('').trim() || '';
           const grounding = candidate?.groundingMetadata || {};
           const chunks = grounding.groundingChunks || [];
-          searchSources = [...new Map(chunks.map(chunk => chunk.web).filter(source => source?.uri)
-            .map(source => [source.uri, { title: source.title || source.uri, url: source.uri }])).values()];
+          searchSources = [...new Map(chunks.map(chunk => chunk.web).filter(source => source?.uri || source?.url)
+            .map(source => { const url = source.uri || source.url; return [url, { title: source.title || url, url }]; })).values()];
           searchQueries = Array.isArray(grounding.webSearchQueries) ? grounding.webSearchQueries : [];
           if (groundedText) {
             searchContext = '\n\nMAKLUMAT GOOGLE SEARCH TERKINI (rujuk jika berkaitan, jangan ubah fakta atau cipta sumber). Jangan senaraikan URL atau bahagian sumber dalam jawapan teks; sumber akan dipaparkan secara berasingan oleh aplikasi:\n' + groundedText;
