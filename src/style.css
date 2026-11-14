@@ -455,3 +455,14 @@
 .admin-presence-dot{display:inline-block;width:9px;height:9px;flex:0 0 9px;border-radius:50%;box-shadow:0 0 0 2px #fff}
 .admin-presence-dot.online{background:#22a447}
 .admin-presence-dot.offline{background:#dc4545}
+
+
+/* Simplified IBalz AI drawer */
+.history-head{justify-content:space-between;margin-bottom:20px;padding:4px 2px 15px;border-bottom:1px solid var(--line)}
+.history-head h2{font:800 29px Manrope;margin:0;letter-spacing:-.7px}
+.history-search{margin:0 0 15px}
+.history-items{padding-top:2px}
+.drawer-account-area{padding-top:13px}
+.drawer-account{min-height:62px;padding:9px 11px;border-radius:18px;justify-content:space-between}
+.drawer-account-text{padding-left:3px}
+.drawer-account-avatar{width:43px;height:43px;flex-basis:43px;font-size:18px;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line)}
