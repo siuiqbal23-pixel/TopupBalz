@@ -107,6 +107,7 @@ function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [newMenuOpen, setNewMenuOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeSources, setActiveSources] = useState(null);
   const [showArchived, setShowArchived] = useState(false);
   const [historyMenu, setHistoryMenu] = useState('');
   const historyPressTimerRef = useRef(0);
@@ -344,7 +345,7 @@ function App() {
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat" ref={chatRef} onScroll={handleChatScroll}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
-          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}{m.imageData && <img className="generated-image" src={m.imageData} alt="Gambar yang dijana oleh IBalz AI"/>}</div>{m.role === 'assistant' && m.searchSources?.length > 0 && <div className="search-sources" aria-label="Sumber web"><div className="search-sources-heading">Sumber web</div><div className="search-source-list">{m.searchSources.map((source, sourceIndex) => { let host = ''; try { host = new URL(source.url).hostname.replace(/^www\\./, ''); } catch {} return <details className="search-source" key={source.url || sourceIndex}><summary><img src={host ? 'https://www.google.com/s2/favicons?domain_url=' + encodeURIComponent(source.url) + '&sz=64' : ''} alt="" loading="lazy"/><span>{host || source.title || 'Laman web'}</span><span className="source-chevron">⌄</span></summary><div className="search-source-info"><b>{source.title || host || 'Sumber web'}</b><small>{host}</small><a href={source.url} target="_blank" rel="noopener noreferrer">Buka laman web ↗</a></div></details>; })}</div></div>}</article>
+          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}{m.imageData && <img className="generated-image" src={m.imageData} alt="Gambar yang dijana oleh IBalz AI"/>}</div>{m.role === 'assistant' && m.searchSources?.length > 0 && <div className="search-sources" aria-label="Sumber web"><button className="source-preview" type="button" onClick={() => setActiveSources(m.searchSources)}><span className="source-favicons">{m.searchSources.slice(0,3).map((source, sourceIndex) => <img key={source.url || sourceIndex} src={source.url ? 'https://www.google.com/s2/favicons?domain_url=' + encodeURIComponent(source.url) + '&sz=64' : ''} alt="" loading="lazy"/> )}</span><span>Sumber web{m.searchSources.length > 1 ? ' +' + (m.searchSources.length - 1) : ''}</span></button></div>}</article>
           {m.role === 'assistant' && <div className="message-tools">
             <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}><ActionIcon name="copy" /></button>
             <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}><ActionIcon name="like" /></button>
@@ -372,6 +373,7 @@ function App() {
         <button className="send" onClick={send} disabled={busy || (!input.trim() && !image)} aria-label="Hantar">↑</button>
       </section>
     </main>
+    {activeSources && <div className="source-sheet-backdrop" onClick={() => setActiveSources(null)}><section className="source-sheet" role="dialog" aria-modal="true" aria-label="Sumber web" onClick={e => e.stopPropagation()}><div className="source-sheet-handle"/><div className="source-sheet-head"><h2>Sumber web</h2><button type="button" onClick={() => setActiveSources(null)} aria-label="Tutup">×</button></div><div className="source-sheet-list">{activeSources.map((source, index) => { let host = ''; try { host = new URL(source.url).hostname.replace(/^www\\./, ''); } catch {} return <article className="source-sheet-item" key={source.url || index}><div className="source-sheet-site"><img src={source.url ? 'https://www.google.com/s2/favicons?domain_url=' + encodeURIComponent(source.url) + '&sz=64' : ''} alt="" loading="lazy"/><span>{host || 'Laman web'}</span></div><b>{source.title || host || 'Sumber web'}</b>{source.url && <a href={source.url} target="_blank" rel="noopener noreferrer">Buka laman web ↗</a>}</article>; })}</div></section></div>}
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
       <div className="history-head"><div><small>IBALZ AI</small><h2>Sejarah chat</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
       <button className="history-new" onClick={startNew}>＋ Chat baharu</button>
