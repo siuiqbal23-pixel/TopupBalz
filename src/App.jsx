@@ -106,6 +106,13 @@ function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [authChecked, setAuthChecked] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [account, setAccount] = useState(null);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountTab, setAccountTab] = useState('info');
+  const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('ibalz-ai-language') || 'auto');
+  const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
+  const [passwordNotice, setPasswordNotice] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -115,6 +122,7 @@ function App() {
         if (!alive) return;
         const authenticated = Boolean(status.authenticated);
         setSignedIn(authenticated);
+        setAccount(authenticated ? status.user : null);
         if (authenticated) {
           const historyResponse = await fetch('/api/auth/me?history=1', { credentials: 'same-origin' });
           const historyData = await historyResponse.json();
@@ -370,18 +378,30 @@ function App() {
     } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
   }
   async function signOut() {
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { setSignedIn(false); setChats([]); setMessages(starter); setActiveId(''); setSessionId(''); sessionStorage.clear(); setError('Anda telah Sign Out.'); }
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { setSignedIn(false); setAccount(null); setAccountOpen(false); setChats([]); setMessages(starter); setActiveId(''); setSessionId(''); sessionStorage.clear(); setError('Anda telah Sign Out.'); }
+  }
+  async function changePassword(e) {
+    e.preventDefault(); setPasswordBusy(true); setPasswordNotice('');
+    try {
+      if (passwordForm.next.length < 8) throw new Error('Kata laluan baharu mesti sekurang-kurangnya 8 aksara.');
+      if (passwordForm.next !== passwordForm.confirm) throw new Error('Pengesahan kata laluan tidak sepadan.');
+      const response = await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'change_password', currentPassword: passwordForm.current, newPassword: passwordForm.next }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat menukar kata laluan.');
+      setPasswordForm({ current: '', next: '', confirm: '' }); setPasswordNotice('Kata laluan berjaya ditukar.');
+    } catch (error) { setPasswordNotice(error.message || 'Tidak dapat menukar kata laluan.'); }
+    finally { setPasswordBusy(false); }
   }
   const visibleChats = (signedIn ? chats : [])
     .filter(c => Boolean(c.archived) === showArchived && (c.title || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top simple-top">
-      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Sejarah chat" aria-label="Sejarah chat"><span/><span/><span/></button>
+      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Menu" aria-label="Buka menu"><span/><span/><span/></button>
       <div className="popup-anchor new-chat-anchor"><button className="top-action new-action" onClick={() => setNewMenuOpen(v => !v)} title="Chat baharu">＋ <span>Chat baharu</span></button>
         {newMenuOpen && <div className="top-popup new-popup"><button onClick={() => { startNew(); setNewMenuOpen(false); }}><span>＋</span><div><b>Chat baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
       </div>
-      {signedIn ? <button className="top-action auth-top-link" type="button" onClick={signOut}>Sign Out</button> : <a className="top-action auth-top-link" href="/login">Sign In</a>}
+      {!signedIn && <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
     </header>
     <main className="shell">
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
@@ -416,8 +436,9 @@ function App() {
       </section>
     </main>
     {activeSources && <div className="source-sheet-backdrop" onClick={() => setActiveSources(null)}><section className="source-sheet" role="dialog" aria-modal="true" aria-label="Sumber web" onClick={e => e.stopPropagation()}><div className="source-sheet-handle"/><div className="source-sheet-head"><h2>Sumber web</h2><button type="button" onClick={() => setActiveSources(null)} aria-label="Tutup">×</button></div><div className="source-sheet-list">{activeSources.map((source, index) => { let host = ''; try { host = new URL(source.url).hostname.replace(/^www\\./, ''); } catch {} return <article className="source-sheet-item" key={source.url || index}><div className="source-sheet-site"><img src={source.url ? 'https://www.google.com/s2/favicons?domain_url=' + encodeURIComponent(source.url) + '&sz=64' : ''} alt="" loading="lazy"/><span>{host || 'Laman web'}</span></div><b>{source.title || host || 'Sumber web'}</b>{source.url && <a href={source.url} target="_blank" rel="noopener noreferrer">Buka laman web ↗</a>}</article>; })}</div></section></div>}
+    {accountOpen && <div className="account-backdrop" onClick={() => setAccountOpen(false)}><section className="account-panel" role="dialog" aria-modal="true" aria-label="Maklumat akaun" onClick={e => e.stopPropagation()}><div className="account-panel-head"><div><small>IBALZ ACCOUNT</small><h2>Maklumat Akaun</h2></div><button onClick={() => setAccountOpen(false)} aria-label="Tutup">×</button></div><div className="account-profile"><span className="account-avatar account-avatar-large">{(account?.username || account?.email || 'A').slice(0,1).toUpperCase()}</span><div><b>{account?.username || 'Pengguna IBalz'}</b><small>{account?.email || ''}</small></div></div><div className="account-tabs"><button className={accountTab==='info'?'active':''} onClick={() => setAccountTab('info')}>Akaun</button><button className={accountTab==='memory'?'active':''} onClick={() => setAccountTab('memory')}>Memori</button><button className={accountTab==='settings'?'active':''} onClick={() => setAccountTab('settings')}>Tetapan AI</button></div>{accountTab==='info' && <div className="account-section"><h3>Butiran akaun</h3><div className="account-detail"><small>Username</small><b>{account?.username || '—'}</b></div><div className="account-detail"><small>Alamat e-mel</small><b>{account?.email || '—'}</b></div><h3>Tukar kata laluan</h3><form className="account-password-form" onSubmit={changePassword}><label>Kata laluan semasa<input type="password" autoComplete="current-password" value={passwordForm.current} onChange={e => setPasswordForm(v => ({...v,current:e.target.value}))} required/></label><label>Kata laluan baharu<input type="password" autoComplete="new-password" minLength={8} value={passwordForm.next} onChange={e => setPasswordForm(v => ({...v,next:e.target.value}))} required/></label><label>Sahkan kata laluan baharu<input type="password" autoComplete="new-password" minLength={8} value={passwordForm.confirm} onChange={e => setPasswordForm(v => ({...v,confirm:e.target.value}))} required/></label><button disabled={passwordBusy}>{passwordBusy?'Menyimpan...':'Simpan kata laluan baharu'}</button></form>{passwordNotice && <p className="account-notice">{passwordNotice}</p>}</div>}{accountTab==='memory' && <div className="account-section"><h3>Memori & sejarah perbualan</h3><p className="account-description">Semua perbualan yang disimpan pada akaun ini boleh dibuka melalui menu sejarah chat.</p><div className="account-detail"><small>Jumlah perbualan</small><b>{chats.length} perbualan</b></div><button className="account-wide-action" onClick={() => { setAccountOpen(false); setHistoryOpen(true); }}>Buka semua memori / sejarah chat</button></div>}{accountTab==='settings' && <div className="account-section"><h3>Bahasa jawapan AI</h3><p className="account-description">Pilih bahasa untuk jawapan IBalz AI. Auto akan ikut bahasa yang anda gunakan.</p><label className="account-language-label">Bahasa AI<select value={aiLanguage} onChange={e => {setAiLanguage(e.target.value);localStorage.setItem('ibalz-ai-language',e.target.value);}}><option value="auto">Automatik (Auto)</option><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="zh">中文</option></select></label><p className="account-description">Tetapan ini disimpan pada peranti ini.</p></div>}<div className="account-footer"><button className="account-switch" onClick={signOut}>Tukar akaun</button><button className="account-logout" onClick={signOut}>Log Keluar</button></div></section></div>}
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
-      <div className="history-head"><div><small>IBALZ AI</small><h2>Sejarah chat</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
+      <div className="history-head"><div><small>IBALZ AI</small><h2>Menu</h2></div><button onClick={() => setHistoryOpen(false)}>×</button></div>
       <button className="history-new" onClick={startNew}>＋ Chat baharu</button>
       <div className="history-tabs"><button className={!showArchived ? 'active' : ''} onClick={() => { setShowArchived(false); setHistoryMenu(''); }}>Semua</button><button className={showArchived ? 'active' : ''} onClick={() => { setShowArchived(true); setHistoryMenu(''); }}>Arkib</button></div>
       <input className="history-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari perbualan..."/>
@@ -430,7 +451,7 @@ function App() {
           <button className="danger" onClick={() => deleteHistoryChat(c)}>Padam</button>
         </div>}
       </div>) : <p className="history-empty">{showArchived ? 'Tiada chat dalam arkib.' : 'Belum ada sejarah chat dalam akaun ini.'}</p>}</div>
-      <p className="history-foot">Sejarah ini disimpan dalam pelayar peranti anda.</p>
+      <div className="drawer-account-area">{signedIn ? <button className="drawer-account" onClick={() => { setAccountOpen(true); setAccountTab('info'); setHistoryOpen(false); setPasswordNotice(''); }}><span className="account-avatar">{(account?.username || account?.email || 'A').slice(0,1).toUpperCase()}</span><span className="drawer-account-text"><b>{account?.username || 'Akaun IBalz'}</b><small>{account?.email || 'E-mel akaun'}</small></span><span className="account-chevron">›</span></button> : <a className="drawer-login" href="/login">Log Masuk / Daftar</a>}</div>
     </aside></div>}
   </div>;
 }
