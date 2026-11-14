@@ -525,7 +525,7 @@ function App() {
           </div>
           <div className="account-head-actions">
             {accountTab === 'settings' && dataSubTab === 'memory' && <div className="memory-head-menu"><button className="memory-more-btn" type="button" aria-label="Pilihan memori" onClick={() => setMemoryMenuOpen(v => !v)}><ActionIcon name="more"/></button>{memoryMenuOpen && <div className="memory-context-menu"><button type="button" disabled={memoryBusy} onClick={() => saveMemoryPreference(!memoryEnabled)}>{memoryBusy ? 'Menyimpan...' : memoryEnabled ? 'Matikan memori' : 'Hidupkan memori'}</button></div>}</div>}
-            <button onClick={() => setAccountOpen(false)} aria-label="Tutup">×</button>
+            
           </div>
         </div>
         {accountTab === 'menu' && <>
