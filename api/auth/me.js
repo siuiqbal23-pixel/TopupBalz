@@ -87,7 +87,8 @@ export default async function handler(req, res) {
     } catch (error) { return res.status(500).json({ error: error.message || 'Gagal membaca sejarah chat.' }); }
   }
   try {
-    const profiles = await sbFetch('ibalz_user_profiles?select=improve_model_for_everyone&id=eq.' + encodeURIComponent(user.id) + '&limit=1');
-    return res.status(200).json({ authenticated: true, user: { id: user.id, email: user.email, username: user.user_metadata?.username || '', improveModelForEveryone: profiles?.[0]?.improve_model_for_everyone === true } });
+    const profiles = await sbFetch('ibalz_user_profiles?select=improve_model_for_everyone,memory_enabled,memories&id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+    const profile = profiles?.[0] || {};
+    return res.status(200).json({ authenticated: true, user: { id: user.id, email: user.email, username: user.user_metadata?.username || '', improveModelForEveryone: profile.improve_model_for_everyone === true, memoryEnabled: profile.memory_enabled !== false }, memories: Array.isArray(profile.memories) ? profile.memories : [] });
   } catch (error) { return res.status(500).json({ error: error.message || 'Gagal membaca akaun.' }); }
 }
