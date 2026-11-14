@@ -1,5 +1,9 @@
 import { useState } from 'react';
 
+function normalizeEmail(value) {
+  return String(value || '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\s+/g, '').trim().toLowerCase();
+}
+
 export default function Auth() {
   const [mode,setMode]=useState(location.pathname==='/signup'?'signup':'signin');
   const [stage,setStage]=useState('form');
@@ -47,14 +51,14 @@ export default function Auth() {
         const d=await request('verify',{action:'verify_email',email,token:otp});
         setEmailVerified(true); setStage('form'); setOtp(''); setNotice(d.message||'E-mel berjaya disahkan. Tekan Daftar untuk cipta akaun.');
       } else {
-        await request('recovery',{action:'verify',email,token:otp});
+        await request('recovery',{action:'verify',email:normalizeEmail(email),token:otp});
         setStage('reset'); setOtp(''); setNotice('E-mel berjaya disahkan. Tetapkan kata laluan baharu.');
       }
     } catch(e) { setNotice(e.message); } finally { setBusy(false); }
   }
   async function sendRecoveryCode(e) {
     e.preventDefault(); setBusy(true); setNotice('');
-    try { const d=await request('recovery',{action:'send',email}); setStage('recovery-otp'); setNotice(d.message||'Kod OTP dihantar ke Gmail anda.'); }
+    try { const normalizedEmail=normalizeEmail(email); setEmail(normalizedEmail); const d=await request('recovery',{action:'send',email:normalizedEmail}); setStage('recovery-otp'); setNotice(d.message||'Kod OTP dihantar ke Gmail anda.'); }
     catch(e) { setNotice(e.message); } finally { setBusy(false); }
   }
   async function resetPassword(e) {
@@ -62,7 +66,7 @@ export default function Auth() {
     try {
       if(password.length<8) throw new Error('Kata laluan mesti sekurang-kurangnya 8 aksara.');
       if(password!==confirmPassword) throw new Error('Pengesahan kata laluan tidak sepadan.');
-      await request('recovery',{action:'reset',email,password});
+      await request('recovery',{action:'reset',email:normalizeEmail(email),password});
       setStage('form'); setPassword(''); setConfirmPassword(''); setOtp('');
       setNotice('Kata laluan berjaya ditukar. Sila Sign In menggunakan kata laluan baharu.');
     } catch(e) { setNotice(e.message); } finally { setBusy(false); }
