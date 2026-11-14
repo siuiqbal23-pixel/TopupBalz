@@ -11,7 +11,7 @@ export default async function handler(req, res) {
       const response = await fetch(URL + '/auth/v1/admin/users?page=1&per_page=500', { headers: ADMIN_HEADERS });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || data.msg || 'Tidak dapat membaca akaun pengguna.');
-      const profiles = await sbFetch('ibalz_user_profiles?select=id,username,email,created_at&limit=500');
+      const profiles = await sbFetch('ibalz_user_profiles?select=id,username,email,created_at,last_seen_at&limit=500');
       const byId = new Map((profiles || []).map(p => [p.id, p]));
       // Hanya profil yang dicipta selepas complete_signup dianggap akaun berdaftar.
       // Auth users yang baru minta OTP / belum tekan Daftar tidak akan dipaparkan.
@@ -20,6 +20,7 @@ export default async function handler(req, res) {
         email: byId.get(u.id)?.email || u.email,
         username: byId.get(u.id)?.username || '',
         created_at: byId.get(u.id)?.created_at || u.created_at,
+        last_seen_at: byId.get(u.id)?.last_seen_at || null,
         last_sign_in_at: u.last_sign_in_at,
         email_confirmed_at: u.email_confirmed_at,
         banned_until: u.banned_until
