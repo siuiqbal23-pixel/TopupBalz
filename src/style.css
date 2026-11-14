@@ -241,3 +241,15 @@
 .admin-api-card button{width:100%;border:0;border-radius:9px;background:#e7b98d;color:#211b16;padding:11px 12px;font:700 12px 'DM Sans';cursor:pointer}
 .admin-api-card button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:720px){.admin-api-grid{grid-template-columns:1fr}}
+
+
+/* Google Search progress and cited source links */
+.busy-search-label{font-size:11px;color:var(--muted);margin:0 0 5px;letter-spacing:.01em}
+.search-sources{margin:10px 0 4px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--panel);max-width:100%}
+.search-sources-heading{font-size:11px;font-weight:800;color:var(--text);margin-bottom:7px}
+.search-query-label{font-size:10px;line-height:1.5;color:var(--muted);margin:0 0 8px;overflow-wrap:anywhere}
+.search-source-list{display:flex;flex-direction:column;gap:7px}
+.search-source-list a{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);text-decoration:none}
+.search-source-list a span{font-size:11px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
+.search-source-list a small{font-size:9px;color:var(--muted);overflow-wrap:anywhere}
+.search-source-list a:hover{border-color:var(--orange);background:var(--soft)}
