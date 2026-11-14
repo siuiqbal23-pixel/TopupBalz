@@ -48,6 +48,8 @@ export default async function handler(req, res) {
 
     // Let Gemini decide whether Google Search can improve this answer.
     let searchContext = '';
+    let searchSources = [];
+    let searchQueries = [];
     const googleGroundingKey = values.google_grounding_api_key ? decryptSecret(values.google_grounding_api_key) : '';
     if (googleGroundingKey && !image) {
       try {
@@ -64,9 +66,12 @@ export default async function handler(req, res) {
         if (groundingResponse.ok) {
           const candidate = groundingData.candidates?.[0];
           const groundedText = candidate?.content?.parts?.map(part => part.text || '').join('').trim() || '';
-          const chunks = candidate?.groundingMetadata?.groundingChunks || [];
-          const sources = chunks.map(chunk => chunk.web).filter(source => source?.uri)
-            .map(source => '- ' + (source.title || source.uri) + ': ' + source.uri);
+          const grounding = candidate?.groundingMetadata || {};
+          const chunks = grounding.groundingChunks || [];
+          searchSources = [...new Map(chunks.map(chunk => chunk.web).filter(source => source?.uri)
+            .map(source => [source.uri, { title: source.title || source.uri, url: source.uri }])).values()];
+          searchQueries = Array.isArray(grounding.webSearchQueries) ? grounding.webSearchQueries : [];
+          const sources = searchSources.map(source => '- ' + source.title + ': ' + source.url);
           if (groundedText) {
             searchContext = '\n\nMAKLUMAT GOOGLE SEARCH TERKINI (rujuk jika berkaitan, jangan ubah fakta atau cipta sumber):\n' + groundedText
               + (sources.length ? '\n\nSUMBER GOOGLE:\n' + [...new Set(sources)].join('\n') : '');
@@ -124,7 +129,7 @@ export default async function handler(req, res) {
         headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+          messages: [{ role: 'system', content: systemPrompt }, ...messages],
           temperature: 0.7, max_tokens: 1200,
         }),
       });
@@ -147,7 +152,7 @@ export default async function handler(req, res) {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ updated_at: new Date().toISOString() }),
     });
-    return res.status(200).json({ reply, sessionId, provider });
+    return res.status(200).json({ reply, sessionId, provider, searchSources, searchQueries });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Ralat pelayan semasa menyimpan chat.' });
   }
