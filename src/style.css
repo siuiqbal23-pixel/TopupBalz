@@ -536,6 +536,9 @@
 /* Sesuaikan data: horizontal tab bar */
 .data-subtabs{display:flex;align-items:center;gap:6px;width:100%;padding:5px;margin:0 0 8px;border:1px solid var(--line);border-radius:13px;background:var(--panel);overflow-x:auto;scrollbar-width:none}
 .data-subtabs::-webkit-scrollbar{display:none}
-.data-subtabs button{flex:0 0 auto;min-height:38px;padding:0 18px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:700 12px 'DM Sans',sans-serif;white-space:nowrap;cursor:pointer;transition:background .18s,color .18s}
-.data-subtabs button.active{background:var(--bg);color:var(--orange);box-shadow:0 1px 5px #00000012}
+.data-subtabs button{display:flex;align-items:center;gap:12px;flex:1 1 auto;width:100%;min-height:54px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--text);font:700 13px 'DM Sans',sans-serif;text-align:left;white-space:nowrap;cursor:pointer;transition:background .18s,color .18s}
+.data-subtabs button:hover{background:var(--bg)}
+.data-subtab-icon{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid var(--line);border-radius:10px;color:var(--orange);background:var(--panel)}
+.data-subtab-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.data-subtabs button i{margin-left:auto;color:var(--muted);font-size:20px;font-style:normal}
 .data-subtabs button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
