@@ -411,10 +411,7 @@ function App() {
     <header className="top simple-top">
       <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Menu" aria-label="Buka menu"><span/><span/><span/></button>
       <div className="top-right-actions">
-        <button className="new-chat-top-btn" onClick={startNew} title="Sembang baharu" aria-label="Sembang baharu">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-7.5"/><path d="m10 14 9.5-9.5a2.12 2.12 0 0 1 3 3L13 17l-4 1 1-4Z"/></svg>
-        </button>
-        {!signedIn && <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
+        {signedIn ? <button className="top-account-avatar" onClick={() => { setAccountOpen(true); setAccountTab('menu'); setHistoryOpen(false); setPasswordNotice(''); }} title="Akaun" aria-label="Buka tetapan akaun"><span>{(account?.email || 'A').trim().slice(0,1).toUpperCase()}</span></button> : <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
       </div>
     </header>
     <main className="shell">
@@ -483,6 +480,7 @@ function App() {
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
       <div className="history-head"><h2>IBalz AI</h2><button onClick={() => setHistoryOpen(false)} aria-label="Tutup menu">×</button></div>
       <input className="history-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari perbualan..."/>
+      <button className="drawer-new-chat" onClick={() => { startNew(); setHistoryOpen(false); }}><span><ActionIcon name="plus" /></span><b>Sembang baharu</b></button>
       <div className="history-items">{visibleChats.length ? visibleChats.map(c => <div key={c.id} className="history-item-wrap" onPointerDown={() => beginHistoryPress(c.id)} onPointerUp={cancelHistoryPress} onPointerLeave={cancelHistoryPress} onPointerCancel={cancelHistoryPress} onContextMenu={e => { e.preventDefault(); setHistoryMenu(c.id); }}>
         <button className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => { if (historyLongPressRef.current) { historyLongPressRef.current = false; return; } if (!historyMenu) openChat(c); }}><b>{c.pinned ? '📌 ' : ''}{c.title || 'Perbualan baharu'}</b></button>
         {historyMenu === c.id && <div className="history-context-menu">
@@ -491,7 +489,7 @@ function App() {
           <button className="danger" onClick={() => deleteHistoryChat(c)}>Padam</button>
         </div>}
       </div>) : <p className="history-empty">Tiada perbualan ditemui.</p>}</div>
-      <div className="drawer-account-area">{signedIn ? <button className="drawer-account drawer-account-icon-only" onClick={() => { setAccountOpen(true); setAccountTab('menu'); setHistoryOpen(false); setPasswordNotice(''); }} aria-label="Buka tetapan akaun" title="Akaun"><span className="account-avatar drawer-account-avatar">{(account?.email || 'A').trim().slice(0,1).toUpperCase()}</span></button> : <a className="drawer-login" href="/login">Log Masuk / Daftar</a>}</div>
+      
     </aside></div>}
   </div>;
 }
