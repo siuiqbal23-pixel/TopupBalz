@@ -375,3 +375,45 @@
 .admin-overview-card span,.admin-overview-card small{color:var(--admin-muted,#777);font-size:13px}
 .admin-overview-card strong{font-size:30px;line-height:1.1;color:var(--admin-text,#171717);overflow-wrap:anywhere}
 @media(max-width:640px){.admin-overview-grid{grid-template-columns:1fr;gap:10px}.admin-overview-card{min-height:100px}}
+
+
+/* Account menu and settings */
+.drawer-account-area{margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.drawer-account{display:flex;align-items:center;gap:11px;width:100%;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer}
+.account-avatar{width:39px;height:39px;display:grid;place-items:center;flex:0 0 39px;border-radius:50%;background:var(--orange);color:#21170f;font:800 16px Manrope}
+.drawer-account-text{min-width:0;flex:1;display:grid;gap:4px}
+.drawer-account-text b{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drawer-account-text small{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-chevron{font-size:24px;color:var(--muted)}
+.drawer-login{display:block;padding:13px;border-radius:12px;background:var(--orange);color:#171717;text-align:center;text-decoration:none;font-size:12px;font-weight:800}
+.account-backdrop{position:fixed;inset:0;z-index:140;background:#0008;display:flex;align-items:center;justify-content:center;padding:16px}
+.account-panel{width:min(510px,100%);max-height:min(88dvh,760px);overflow:auto;padding:22px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 70px #0003;animation:sourceRise .2s ease}
+.account-panel-head{display:flex;justify-content:space-between;align-items:center}
+.account-panel-head small{font-size:9px;letter-spacing:1.5px;color:var(--orange);font-weight:800}
+.account-panel-head h2{font:800 22px Manrope;margin:4px 0 0}
+.account-panel-head>button{width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font-size:22px}
+.account-profile{display:flex;align-items:center;gap:12px;padding:18px 0}
+.account-avatar-large{width:48px;height:48px;flex-basis:48px;font-size:20px}
+.account-profile>div{min-width:0;display:grid;gap:4px}
+.account-profile b{font-size:14px}.account-profile small{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.account-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:5px;background:var(--soft);border-radius:12px}
+.account-tabs button{padding:10px 5px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:11px;font-weight:700}
+.account-tabs button.active{background:var(--panel);color:var(--text);box-shadow:0 2px 8px #0000000d}
+.account-section{padding:18px 0;display:grid;gap:12px}
+.account-section h3{font:700 14px Manrope;margin:4px 0}
+.account-detail{display:grid;gap:5px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
+.account-detail small,.account-description{font-size:11px;color:var(--muted)}
+.account-detail b{font-size:13px;overflow-wrap:anywhere}
+.account-description{line-height:1.55;margin:0}
+.account-password-form{display:grid;gap:10px}
+.account-password-form label,.account-language-label{display:grid;gap:6px;font-size:11px;font-weight:700}
+.account-password-form input,.account-language-label select{height:43px;padding:0 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font:12px 'DM Sans'}
+.account-password-form>button,.account-wide-action{height:44px;border:0;border-radius:11px;background:var(--orange);color:#21170f;font-size:12px;font-weight:800}
+.account-password-form>button:disabled{opacity:.6}
+.account-notice{margin:0;padding:10px;border-radius:10px;background:var(--soft);font-size:11px;color:var(--text)}
+.account-footer{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding-top:14px;border-top:1px solid var(--line)}
+.account-footer button{height:42px;border-radius:11px;font-size:12px;font-weight:700}
+.account-switch{border:1px solid var(--line);background:var(--panel);color:var(--text)}
+.account-logout{border:0;background:#f4a261;color:#21170f}
+.auth-top-link{width:auto!important;padding:0 15px!important;font-size:12px!important}
+@media(max-width:520px){.account-panel{padding:18px;border-radius:19px}.account-panel-head h2{font-size:19px}.account-tabs button{font-size:10px}}
