@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Admin from './Admin.jsx';
+import Auth from './Auth.jsx';
 
 const starter = [];
 const HISTORY_KEY = 'ibalz-chat-history';
@@ -99,7 +100,9 @@ function needsGoogleSearch(text) {
 }
 
 function App() {
-  if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
+  const route = window.location.pathname.replace(/\/$/, '');
+  if (route === '/admin') return <Admin />;
+  if (route === '/login' || route === '/signup') return <Auth />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [chats, setChats] = useState(readHistory);
   const [activeId, setActiveId] = useState(() => sessionStorage.getItem('ibalz-active-chat') || '');
@@ -347,6 +350,7 @@ function App() {
       <div className="popup-anchor new-chat-anchor"><button className="top-action new-action" onClick={() => setNewMenuOpen(v => !v)} title="Chat baharu">＋ <span>Chat baharu</span></button>
         {newMenuOpen && <div className="top-popup new-popup"><button onClick={() => { startNew(); setNewMenuOpen(false); }}><span>＋</span><div><b>Chat baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
       </div>
+      <a className="top-action auth-top-link" href="/login">Sign In</a>
     </header>
     <main className="shell">
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
