@@ -15,7 +15,7 @@ export default async function handler(req,res) {
   if(req.method!=='POST') return res.status(405).json({error:'Method tidak dibenarkan.'});
   try {
     const action=String(req.body?.action||'');
-    const email=String(req.body?.email||'').normalize('NFKC').replace(/[\\u200B-\\u200D\\uFEFF]/g,'').replace(/\\s+/g,'').trim().toLowerCase();
+    const email=String(req.body?.email||'').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\s+/g,'').trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Alamat e-mel tidak sah.'});
     if(action==='send') {
       const profiles=await sbFetch('ibalz_user_profiles?select=id&email=eq.'+encodeURIComponent(email)+'&limit=1');
