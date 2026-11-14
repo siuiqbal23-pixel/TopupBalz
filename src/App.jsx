@@ -410,7 +410,12 @@ function App() {
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top simple-top">
       <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Menu" aria-label="Buka menu"><span/><span/><span/></button>
-      {!signedIn && <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
+      <div className="top-right-actions">
+        <button className="new-chat-top-btn" onClick={startNew} title="Sembang baharu" aria-label="Sembang baharu">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-7.5"/><path d="m10 14 9.5-9.5a2.12 2.12 0 0 1 3 3L13 17l-4 1 1-4Z"/></svg>
+        </button>
+        {!signedIn && <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
+      </div>
     </header>
     <main className="shell">
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
