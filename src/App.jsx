@@ -115,6 +115,10 @@ function App() {
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [improveModel, setImproveModel] = useState(false);
   const [trainingBusy, setTrainingBusy] = useState(false);
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const [memories, setMemories] = useState([]);
+  const [memoryBusy, setMemoryBusy] = useState(false);
+  const [memoryMenuOpen, setMemoryMenuOpen] = useState(false);
   const [dataNotice, setDataNotice] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -130,6 +134,8 @@ function App() {
         setSignedIn(authenticated);
         setAccount(authenticated ? status.user : null);
         setImproveModel(authenticated ? status.user.improveModelForEveryone === true : false);
+        setMemoryEnabled(authenticated ? status.user.memoryEnabled !== false : true);
+        setMemories(authenticated && Array.isArray(status.memories) ? status.memories : []);
         if (authenticated) {
           const historyResponse = await fetch('/api/auth/me?history=1', { credentials: 'same-origin' });
           const historyData = await historyResponse.json();
@@ -421,6 +427,16 @@ function App() {
     } catch (error) { setDataNotice(error.message || 'Tidak dapat menyimpan tetapan.'); }
     finally { setTrainingBusy(false); }
   }
+  async function saveMemoryPreference(enabled) {
+    setMemoryBusy(true); setMemoryMenuOpen(false); setDataNotice('');
+    try {
+      const response = await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_memory_preference', enabled }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat menyimpan tetapan memori.');
+      setMemoryEnabled(enabled);
+    } catch (error) { setDataNotice(error.message || 'Tidak dapat menyimpan tetapan memori.'); }
+    finally { setMemoryBusy(false); }
+  }
   async function exportAccountData() {
     setDataNotice('Sedang menyediakan eksport data...');
     try {
@@ -497,9 +513,12 @@ function App() {
         <div className="account-panel-head">
           <div className="account-head-title">
             {accountTab !== 'menu' && <button className="account-back-btn" onClick={() => setAccountTab('menu')} aria-label="Kembali">‹</button>}
-            <div><small>IBALZ ACCOUNT</small><h2>{accountTab === 'menu' ? 'Tetapan' : ({info:'Akaun',settings:'Sesuaikan IBalz',general:'Umum',privacy:'Pusat privasi',history:'Sejarah dan data'}[accountTab] || 'Tetapan')}</h2></div>
+            <div><small>IBALZ ACCOUNT</small><h2>{accountTab === 'menu' ? 'Tetapan' : ({info:'Akaun',settings:'Sesuaikan IBalz',general:'Umum',privacy:'Pusat privasi',history:'Sejarah dan data',memory:'Memori'}[accountTab] || 'Tetapan')}</h2></div>
           </div>
-          <button onClick={() => setAccountOpen(false)} aria-label="Tutup">×</button>
+          <div className="account-head-actions">
+            {accountTab === 'memory' && <button className="memory-more-btn" type="button" aria-label="Pilihan memori" onClick={() => setMemoryMenuOpen(v => !v)}><ActionIcon name="more"/></button>}
+            <button onClick={() => setAccountOpen(false)} aria-label="Tutup">×</button>
+          </div>
         </div>
         {accountTab === 'menu' && <>
           <div className="account-menu-profile"><span className="account-avatar account-avatar-large">{(account?.email || 'A').trim().slice(0,1).toUpperCase()}</span><div><b>Akaun IBalz</b><small>Urus akaun dan tetapan anda</small></div></div>
@@ -508,7 +527,7 @@ function App() {
             <button onClick={() => setAccountTab('settings')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="19" r="2"/></svg></span><span><b>Sesuaikan IBalz</b><small>Bahasa dan cara IBalz menjawab</small></span><i>›</i></button>
             <button onClick={() => setAccountTab('general')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8.2l-.2.1h-3.4l-.1-.2a1.7 1.7 0 0 0-1.6-1l-.2.1-3-1.7.1-.2a1.7 1.7 0 0 0-.2-1.8l-.1-.2v-3.4l.2-.1a1.7 1.7 0 0 0 1-1.6l-.1-.2 1.7-3 .2.1a1.7 1.7 0 0 0 1.8-.2l.2-.1h3.4l.1.2a1.7 1.7 0 0 0 1.6 1l.2-.1 3 1.7-.1.2a1.7 1.7 0 0 0 .2 1.8l.1.2v3.4z"/></svg></span><span><b>Umum</b><small>Tema dan paparan aplikasi</small></span><i>›</i></button>
             <button onClick={() => setAccountTab('privacy')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span><b>Pusat privasi</b><small>Ketahui cara data akaun dikendalikan</small></span><i>›</i></button>
-            <button onClick={() => setAccountTab('history')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span><b>Sejarah dan data</b><small>Sejarah perbualan dan data anda</small></span><i>›</i></button>
+            <button onClick={() => { setAccountTab('memory'); setMemoryMenuOpen(false); }}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6l1 3 3 2v8l-3 2-1 3H9l-1-3-3-2V8l3-2 1-3Z"/><path d="M9 12h6M12 9v6"/></svg></span><span><b>Memori</b><small>Perkara yang IBalz ingat tentang anda</small></span><i>›</i></button>
           </nav>
         </>}
         {accountTab === 'info' && <div className="account-section">
@@ -519,11 +538,16 @@ function App() {
         {accountTab === 'settings' && <div className="account-section"><h3>Bahasa jawapan AI</h3><p className="account-description">Pilih bahasa untuk jawapan IBalz AI. Auto akan ikut bahasa yang anda gunakan.</p><label className="account-language-label">Bahasa AI<select value={aiLanguage} onChange={e => {setAiLanguage(e.target.value);localStorage.setItem('ibalz-ai-language',e.target.value);}}><option value="auto">Automatik (Auto)</option><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="zh">中文</option></select></label><p className="account-description">Tetapan ini disimpan pada peranti ini.</p></div>}
         {accountTab === 'general' && <div className="account-section"><h3>Penampilan</h3><p className="account-description">Pilih tema paparan IBalz AI.</p><div className="account-theme-options"><button className={!dark?'active':''} onClick={() => {setDark(false);localStorage.setItem('ibalz-theme','light')}}>☀️ Cerah</button><button className={dark?'active':''} onClick={() => {setDark(true);localStorage.setItem('ibalz-theme','dark')}}>🌙 Gelap</button></div></div>}
         {accountTab === 'privacy' && <div className="account-section"><h3>Privasi akaun</h3><p className="account-description">Maklumat akaun digunakan untuk mengenal pasti akaun anda dan menyimpan sejarah perbualan supaya anda boleh menyambung semula chat pada masa akan datang.</p><div className="account-detail"><small>Maklumat profil</small><b>E-mel dan username akaun anda</b></div><div className="account-detail"><small>Sejarah chat</small><b>Disimpan pada akaun anda untuk akses semula</b></div><div className="account-detail"><small>Kata laluan</small><b>Kata laluan tidak dipaparkan dalam tetapan ini.</b></div></div>}
-        {accountTab === 'history' && <div className="account-section">
-          <h3>Sejarah perbualan</h3>
-          <p className="account-description">Perbualan yang disimpan pada akaun ini.</p>
-          <div className="account-detail"><small>Jumlah perbualan</small><b>{chats.length} perbualan</b></div>
-          <button className="account-wide-action" onClick={() => { setAccountOpen(false); setHistoryOpen(true); }}>Buka sejarah perbualan</button>
+        {accountTab === 'memory' && <div className="account-section memory-section">
+          <div className="memory-menu-wrap">
+            {memoryMenuOpen && <div className="memory-context-menu"><button type="button" disabled={memoryBusy} onClick={() => saveMemoryPreference(!memoryEnabled)}>{memoryBusy ? 'Menyimpan...' : memoryEnabled ? 'Matikan memori' : 'Hidupkan memori'}</button></div>}
+          </div>
+          <h3>Memori</h3>
+          <p className="account-description">Di sini anda boleh melihat perkara yang IBalz simpan daripada perbualan untuk membantu jawapan akan datang. Kandungan memori ini hanya boleh dilihat dan tidak boleh diedit.</p>
+          <div className={'memory-status ' + (memoryEnabled ? 'enabled' : 'disabled')}><span className="memory-status-dot"/><div><b>Memori {memoryEnabled ? 'dihidupkan' : 'dimatikan'}</b><small>{memoryEnabled ? 'IBalz boleh menyimpan dan menggunakan memori yang sesuai.' : 'IBalz tidak akan menyimpan atau menggunakan memori baharu.'}</small></div></div>
+          <div className="memory-list">
+            {memories.length ? memories.map((item, index) => <article className="memory-item" key={item.id || index}><span className="memory-item-icon">✦</span><div><p>{item.content}</p><small>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Memori tersimpan'}</small></div></article>) : <div className="memory-empty"><span>✦</span><b>Belum ada memori</b><small>Apabila IBalz menemui maklumat berguna untuk diingati dalam perbualan, ia akan dipaparkan di sini.</small></div>}
+          </div>
           <div className="account-data-divider"/>
           <h3>Tingkatkan model untuk semua orang</h3>
           <div className="account-toggle-row"><div><b>{improveModel ? 'Dihidupkan' : 'Dimatikan'}</b><small>Benarkan penggunaan perbualan untuk membantu meningkatkan IBalz AI pada masa hadapan.</small></div><button type="button" className={'account-switch-toggle ' + (improveModel ? 'on' : '')} role="switch" aria-checked={improveModel} disabled={trainingBusy} onClick={() => saveImproveModel(!improveModel)}><span/></button></div>
