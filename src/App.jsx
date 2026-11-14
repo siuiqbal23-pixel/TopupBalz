@@ -106,13 +106,35 @@ function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
   const [authChecked, setAuthChecked] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
-  useEffect(() => { let alive = true; fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.json()).then(d => { if (alive) setSignedIn(Boolean(d.authenticated)); }).catch(() => { if (alive) setSignedIn(false); }).finally(() => { if (alive) setAuthChecked(true); }); return () => { alive = false; }; }, []);
-  const [chats, setChats] = useState(readHistory);
-  const [activeId, setActiveId] = useState(() => sessionStorage.getItem('ibalz-active-chat') || '');
-  const [messages, setMessages] = useState(() => {
-    try { const saved = JSON.parse(sessionStorage.getItem('ibalz-chat')); return Array.isArray(saved) && saved[0]?.content !== 'Hai! Saya IBalz AI. Apa yang boleh saya bantu hari ini?' ? saved : starter; } catch { return starter; }
-  });
-  const [sessionId, setSessionId] = useState(() => sessionStorage.getItem('ibalz-chat-session') || '');
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const response = await fetch('/api/auth/me', { credentials: 'same-origin' });
+        const status = await response.json();
+        if (!alive) return;
+        const authenticated = Boolean(status.authenticated);
+        setSignedIn(authenticated);
+        if (authenticated) {
+          const historyResponse = await fetch('/api/user/chats', { credentials: 'same-origin' });
+          const historyData = await historyResponse.json();
+          if (alive && historyResponse.ok) setChats(Array.isArray(historyData.chats) ? historyData.chats : []);
+        } else {
+          setChats([]); setMessages(starter); setActiveId(''); setSessionId('');
+          localStorage.removeItem(HISTORY_KEY);
+          sessionStorage.removeItem('ibalz-chat');
+          sessionStorage.removeItem('ibalz-active-chat');
+          sessionStorage.removeItem('ibalz-chat-session');
+        }
+      } catch { if (alive) { setSignedIn(false); setChats([]); setMessages(starter); } }
+      finally { if (alive) setAuthChecked(true); }
+    })();
+    return () => { alive = false; };
+  }, []);
+  const [chats, setChats] = useState([]);
+  const [activeId, setActiveId] = useState('');
+  const [messages, setMessages] = useState(starter);
+  const [sessionId, setSessionId] = useState('');
   const [input, setInput] = useState('');
   const [image, setImage] = useState('');
   const [imageName, setImageName] = useState('');
@@ -168,8 +190,8 @@ function App() {
   const [showJumpDown, setShowJumpDown] = useState(false);
 
   useEffect(() => {
-    sessionStorage.setItem('ibalz-chat', JSON.stringify(messages.map(({ imageData, ...message }) => message)));
-  }, [messages]);
+    if (signedIn) sessionStorage.setItem('ibalz-chat', JSON.stringify(messages.map(({ imageData, ...message }) => message)));
+  }, [messages, signedIn]);
   useEffect(() => {
     if (messages[messages.length - 1]?.role !== 'user') return;
     nearBottomRef.current = true;
@@ -202,16 +224,10 @@ function App() {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }
   useEffect(() => {
-    if (!activeId || messages.length === 0) return;
-    const savedMessages = messages.map(({ imageData, ...message }) => message);
-    const current = { id: activeId, sessionId, title: titleFor(messages), messages: savedMessages, updatedAt: new Date().toISOString() };
-    setChats(old => {
-      const next = [current, ...old.filter(c => c.id !== activeId)].slice(0, 80);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      return next;
-    });
-    sessionStorage.setItem('ibalz-active-chat', activeId);
-  }, [messages, sessionId, activeId]);
+    if (!signedIn || !activeId || messages.length === 0) return;
+    const current = { id: activeId, sessionId, title: titleFor(messages), messages: messages.map(({ imageData, ...message }) => message), updatedAt: new Date().toISOString() };
+    setChats(old => [current, ...old.filter(c => c.id !== activeId)].slice(0, 80));
+  }, [messages, sessionId, activeId, signedIn]);
 
   function updateHistoryChat(id, patch) {
     setChats(old => {
@@ -253,12 +269,18 @@ function App() {
     sessionStorage.setItem('ibalz-chat', JSON.stringify(starter));
     setHistoryOpen(false);
   }
-  function openChat(chat) {
-    setActiveId(chat.id); setMessages(chat.messages || starter); setSessionId(chat.sessionId || '');
-    if (chat.sessionId) localStorage.setItem('ibalz-chat-session', chat.sessionId); else sessionStorage.removeItem('ibalz-chat-session');
-    sessionStorage.setItem('ibalz-chat', JSON.stringify(chat.messages || starter));
-    sessionStorage.setItem('ibalz-active-chat', chat.id);
-    setImage(''); setImageName(''); setError(''); setHistoryOpen(false); setMoreOpen(false); setNewMenuOpen(false);
+  async function openChat(chat) {
+    if (!signedIn) { setError('Sila Sign In dahulu untuk melihat sejarah chat.'); return; }
+    try {
+      const response = await fetch('/api/user/chats?id=' + encodeURIComponent(chat.sessionId || chat.id), { credentials: 'same-origin' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat membuka chat.');
+      const loaded = data.chat;
+      setActiveId(loaded.id); setMessages(loaded.messages || starter); setSessionId(loaded.sessionId || loaded.id);
+      sessionStorage.setItem('ibalz-chat', JSON.stringify(loaded.messages || starter));
+      setImage(''); setImageName(''); setError(''); setHistoryOpen(false); setMoreOpen(false); setNewMenuOpen(false);
+      setChats(old => [loaded, ...old.filter(c => c.id !== loaded.id)]);
+    } catch (e) { setError(e.message || 'Tidak dapat membuka sejarah chat.'); }
   }
   function chooseImage(file) {
     if (!file) return;
@@ -348,9 +370,9 @@ function App() {
     } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
   }
   async function signOut() {
-    try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } finally { setSignedIn(false); setError("Anda telah Sign Out."); }
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); } finally { setSignedIn(false); setChats([]); setMessages(starter); setActiveId(''); setSessionId(''); sessionStorage.clear(); setError('Anda telah Sign Out.'); }
   }
-  const visibleChats = chats
+  const visibleChats = (signedIn ? chats : [])
     .filter(c => Boolean(c.archived) === showArchived && (c.title || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
@@ -407,7 +429,7 @@ function App() {
           <button onClick={() => updateHistoryChat(c.id, { archived: !c.archived })}>{c.archived ? 'Keluarkan daripada arkib' : 'Arkibkan'}</button>
           <button className="danger" onClick={() => deleteHistoryChat(c)}>Padam</button>
         </div>}
-      </div>) : <p className="history-empty">{showArchived ? 'Tiada chat dalam arkib.' : 'Belum ada sejarah chat pada peranti ini.'}</p>}</div>
+      </div>) : <p className="history-empty">{showArchived ? 'Tiada chat dalam arkib.' : 'Belum ada sejarah chat dalam akaun ini.'}</p>}</div>
       <p className="history-foot">Sejarah ini disimpan dalam pelayar peranti anda.</p>
     </aside></div>}
   </div>;
