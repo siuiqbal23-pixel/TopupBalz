@@ -116,7 +116,7 @@ function App() {
         const authenticated = Boolean(status.authenticated);
         setSignedIn(authenticated);
         if (authenticated) {
-          const historyResponse = await fetch('/api/user/chats', { credentials: 'same-origin' });
+          const historyResponse = await fetch('/api/auth/me?history=1', { credentials: 'same-origin' });
           const historyData = await historyResponse.json();
           if (alive && historyResponse.ok) setChats(Array.isArray(historyData.chats) ? historyData.chats : []);
         } else {
@@ -272,7 +272,7 @@ function App() {
   async function openChat(chat) {
     if (!signedIn) { setError('Sila Sign In dahulu untuk melihat sejarah chat.'); return; }
     try {
-      const response = await fetch('/api/user/chats?id=' + encodeURIComponent(chat.sessionId || chat.id), { credentials: 'same-origin' });
+      const response = await fetch('/api/auth/me?history=1&id=' + encodeURIComponent(chat.sessionId || chat.id), { credentials: 'same-origin' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Tidak dapat membuka chat.');
       const loaded = data.chat;
