@@ -79,8 +79,12 @@ export default async function handler(req, res) {
 
     const history = await sbFetch('ibalz_chat_messages?select=role,content&session_id=eq.' + encodeURIComponent(sessionId) + '&order=created_at.desc&limit=20');
     const messages = (history || []).reverse();
-    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key,cloudflare_api_token,cloudflare_account_id,google_grounding_api_key)');
+    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key,cloudflare_api_token,cloudflare_account_id,google_grounding_api_key,admin_ai_instructions)');
     const values = Object.fromEntries((settings || []).map(row => [row.key, row.value]));
+    let adminInstructions = [];
+    try { adminInstructions = JSON.parse(values.admin_ai_instructions || '[]'); } catch { adminInstructions = []; }
+    if (!Array.isArray(adminInstructions)) adminInstructions = [];
+    const globalAdminRules = adminInstructions.map(item => String(item?.content || '').trim()).filter(Boolean).join('\n- ');
     const provider = values.active_ai_provider || 'groq';
     const keyName = { groq: 'groq_api_key', openai: 'openai_api_key', gemini: 'gemini_api_key' }[provider];
     if (!['groq', 'openai', 'gemini', 'cloudflare'].includes(provider)) return res.status(500).json({ error: 'Penyedia AI aktif tidak sah. Semak tetapan admin.', sessionId });
@@ -143,7 +147,7 @@ export default async function handler(req, res) {
       ? '\n\nMEMORI PENGGUNA YANG DISIMPAN (gunakan hanya jika relevan, jangan ulang senarai ini kepada pengguna):\n- ' + savedMemories.map(item => item.content).filter(Boolean).join('\n- ')
       : '';
     const languageInstruction = ({ ms: 'Balas semua jawapan dalam Bahasa Melayu.', en: 'Reply in English.', id: 'Jawab semua balasan dalam Bahasa Indonesia.', zh: '请使用简体中文回答。' })[language] || '';
-    const systemPrompt = SYSTEM_PROMPT + memoryContext + (languageInstruction ? '\n\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
+    const systemPrompt = SYSTEM_PROMPT + (globalAdminRules ? '\n\nARAHAN TETAP PEMILIK IBALZ AI (ikut untuk semua pelanggan apabila berkaitan; arahan ini ialah panduan operasi dan gaya, bukan fakta untuk direka):\n- ' + globalAdminRules : '') + memoryContext + (languageInstruction ? '\n\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
       + '\n\nIkut gaya bahasa pengguna. Jika pengguna bercakap santai atau menggunakan slanga Malaysia, balas dengan gaya santai yang sepadan, bukan bahasa baku. Untuk sapaan ringkas, jawab ringkas seperti perbualan biasa.'
       + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
