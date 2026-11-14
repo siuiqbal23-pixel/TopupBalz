@@ -1,5 +1,8 @@
 import { authRequest } from '../../lib/user-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
+const URL = process.env.SUPABASE_URL || 'https://evvquwzrqkmmpoeytssr.supabase.co';
+const KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ADMIN_HEADERS = KEY?.startsWith('sb_secret_') ? { apikey: KEY } : { apikey: KEY, Authorization: 'Bearer ' + KEY };
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method tidak dibenarkan.' });
   try {
@@ -12,14 +15,13 @@ export default async function handler(req, res) {
     if (password.length < 8) return res.status(400).json({ error: 'Kata laluan mesti sekurang-kurangnya 8 aksara.' });
     const existing = await sbFetch('ibalz_user_profiles?select=id&username=ilike.' + encodeURIComponent(username) + '&limit=1');
     if (existing?.length) return res.status(409).json({ error: 'Username ini sudah digunakan.' });
-    const created = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data: { username } }) });
-    if (!created.user?.id) return res.status(400).json({ error: 'Pendaftaran tidak berjaya. Semak e-mel atau cuba lagi.' });
-    if (Array.isArray(created.user.identities) && created.user.identities.length === 0) return res.status(409).json({ error: 'E-mel ini sudah pernah didaftarkan. Sila Sign In.' });
-    await sbFetch('ibalz_user_profiles?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ id: created.user.id, username, email }]) });
-    return res.status(200).json({ ok: true, needsOtp: true, email, message: 'Kod pengesahan dihantar ke e-mel. Masukkan OTP untuk sahkan akaun. Selepas itu, log masuk secara berasingan.' });
+    const usersResponse = await fetch(URL + '/auth/v1/admin/users?page=1&per_page=1000', { headers: ADMIN_HEADERS });
+    const usersData = await usersResponse.json().catch(() => ({}));
+    if (!usersResponse.ok) throw new Error(usersData.message || usersData.msg || 'Tidak dapat menyemak e-mel.');
+    if ((usersData.users || []).some(u => String(u.email || '').toLowerCase() === email)) return res.status(409).json({ error: 'E-mel ini sudah pernah didaftarkan. Sila Sign In.' });
+    await authRequest('otp', { method: 'POST', body: JSON.stringify({ email, create_user: true, data: { username } }) });
+    return res.status(200).json({ ok: true, needsOtp: true, email, message: 'Kod pengesahan dihantar. Semak Gmail anda.' });
   } catch (error) {
-    const message = error.message || 'Pendaftaran gagal.';
-    const duplicate = /already registered|already exists|user already|duplicate/i.test(message);
-    return res.status(duplicate ? 409 : 400).json({ error: duplicate ? 'E-mel ini sudah pernah didaftarkan. Sila Sign In.' : message });
+    return res.status(400).json({ error: error.message || 'Gagal menghantar kod pengesahan.' });
   }
 }
