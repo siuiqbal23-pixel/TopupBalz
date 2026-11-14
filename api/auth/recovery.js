@@ -16,7 +16,7 @@ export default async function handler(req,res) {
   try {
     const action=String(req.body?.action||'');
     const email=String(req.body?.email||'').trim().toLowerCase();
-    if(!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Alamat e-mel tidak sah.'});
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Alamat e-mel tidak sah.'});
     if(action==='send') {
       const profiles=await sbFetch('ibalz_user_profiles?select=id&email=eq.'+encodeURIComponent(email)+'&limit=1');
       if(!profiles?.length) return res.status(404).json({error:'E-mel ini belum pernah didaftarkan. Sila semak e-mel anda.'});
