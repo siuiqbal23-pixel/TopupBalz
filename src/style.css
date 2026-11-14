@@ -368,3 +368,10 @@
 .admin-heading,.admin-panel{scroll-margin-top:18px}
 @keyframes adminDrawerIn{from{transform:translateX(-18px);opacity:.6}to{transform:translateX(0);opacity:1}}
 @media(max-width:560px){.admin-wrap{padding:22px 13px 42px}.admin-panel{padding:15px;border-radius:14px}.admin-heading{align-items:flex-start;gap:12px}.admin-stat{min-width:88px;padding:10px}.admin-stat strong{font-size:20px}.admin-activity-row{align-items:flex-start}.admin-activity-status{font-size:9px}}
+
+
+.admin-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:18px 0 22px}
+.admin-overview-card{display:flex;flex-direction:column;gap:8px;min-height:132px;justify-content:center}
+.admin-overview-card span,.admin-overview-card small{color:var(--admin-muted,#777);font-size:13px}
+.admin-overview-card strong{font-size:30px;line-height:1.1;color:var(--admin-text,#171717);overflow-wrap:anywhere}
+@media(max-width:640px){.admin-overview-grid{grid-template-columns:1fr;gap:10px}.admin-overview-card{min-height:100px}}
