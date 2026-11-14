@@ -4,8 +4,17 @@ import { sbFetch } from '../../lib/supabase.js';
 export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
-      if (String(req.body?.action || '') !== 'change_password') return res.status(400).json({ error: 'Tindakan tidak sah.' });
+      const action = String(req.body?.action || '');
       const user = await currentUser(req, res);
+      if (action === 'presence') {
+        if (!user?.id) return res.status(401).json({ error: 'Sila log masuk semula.' });
+        await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(user.id), {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ last_seen_at: new Date().toISOString() }),
+        });
+        return res.status(200).json({ ok: true });
+      }
+      if (action !== 'change_password') return res.status(400).json({ error: 'Tindakan tidak sah.' });
       if (!user?.id || !user?.email) return res.status(401).json({ error: 'Sila log masuk semula.' });
       const currentPassword = typeof req.body?.currentPassword === 'string' ? req.body.currentPassword : '';
       const newPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
