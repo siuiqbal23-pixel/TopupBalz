@@ -359,6 +359,7 @@ function App() {
         const data = await res.json();
         if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
         if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
+        if (Array.isArray(data.memories)) setMemories(data.memories);
         setMessages(v => [...v, { role: 'assistant', content: data.reply, searchSources: data.searchSources || [], searchQueries: data.searchQueries || [] }]);
       }
     } catch (e) { setError(e.message || 'Tidak dapat menyambung.'); }
