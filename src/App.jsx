@@ -113,6 +113,12 @@ function App() {
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
   const [passwordNotice, setPasswordNotice] = useState('');
   const [passwordBusy, setPasswordBusy] = useState(false);
+  const [improveModel, setImproveModel] = useState(false);
+  const [trainingBusy, setTrainingBusy] = useState(false);
+  const [dataNotice, setDataNotice] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteBusy, setDeleteBusy] = useState(false);
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -123,6 +129,7 @@ function App() {
         const authenticated = Boolean(status.authenticated);
         setSignedIn(authenticated);
         setAccount(authenticated ? status.user : null);
+        setImproveModel(authenticated ? status.user.improveModelForEveryone === true : false);
         if (authenticated) {
           const historyResponse = await fetch('/api/auth/me?history=1', { credentials: 'same-origin' });
           const historyData = await historyResponse.json();
@@ -403,6 +410,44 @@ function App() {
     } catch (error) { setPasswordNotice(error.message || 'Tidak dapat menukar kata laluan.'); }
     finally { setPasswordBusy(false); }
   }
+  async function saveImproveModel(enabled) {
+    setTrainingBusy(true); setDataNotice('');
+    try {
+      const response = await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_training_preference', enabled }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat menyimpan tetapan.');
+      setImproveModel(enabled);
+      setDataNotice('Tetapan berjaya disimpan.');
+    } catch (error) { setDataNotice(error.message || 'Tidak dapat menyimpan tetapan.'); }
+    finally { setTrainingBusy(false); }
+  }
+  async function exportAccountData() {
+    setDataNotice('Sedang menyediakan eksport data...');
+    try {
+      const response = await fetch('/api/auth/me?export=1', { credentials: 'same-origin' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Eksport gagal.');
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = 'ibalz-data-' + new Date().toISOString().slice(0,10) + '.json';
+      document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      setDataNotice('Eksport data berjaya dimuat turun.');
+    } catch (error) { setDataNotice(error.message || 'Tidak dapat mengeksport data.'); }
+  }
+  async function deleteMyAccount(event) {
+    event.preventDefault(); setDeleteBusy(true); setDataNotice('');
+    try {
+      const response = await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete_account', currentPassword: deletePassword }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat memadam akaun.');
+      localStorage.removeItem(HISTORY_KEY); localStorage.removeItem('ibalz-ai-language');
+      sessionStorage.clear();
+      setSignedIn(false); setAccount(null); setChats([]); setMessages(starter); setActiveId(''); setSessionId('');
+      location.href = '/signup';
+    } catch (error) { setDataNotice(error.message || 'Tidak dapat memadam akaun.'); }
+    finally { setDeleteBusy(false); }
+  }
   async function switchAccount() { await signOut(); location.href = '/login'; }
   const visibleChats = (signedIn ? chats : [])
     .filter(c => (c.title || '').toLowerCase().includes(search.toLowerCase()))
@@ -474,7 +519,25 @@ function App() {
         {accountTab === 'settings' && <div className="account-section"><h3>Bahasa jawapan AI</h3><p className="account-description">Pilih bahasa untuk jawapan IBalz AI. Auto akan ikut bahasa yang anda gunakan.</p><label className="account-language-label">Bahasa AI<select value={aiLanguage} onChange={e => {setAiLanguage(e.target.value);localStorage.setItem('ibalz-ai-language',e.target.value);}}><option value="auto">Automatik (Auto)</option><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="zh">中文</option></select></label><p className="account-description">Tetapan ini disimpan pada peranti ini.</p></div>}
         {accountTab === 'general' && <div className="account-section"><h3>Penampilan</h3><p className="account-description">Pilih tema paparan IBalz AI.</p><div className="account-theme-options"><button className={!dark?'active':''} onClick={() => {setDark(false);localStorage.setItem('ibalz-theme','light')}}>☀️ Cerah</button><button className={dark?'active':''} onClick={() => {setDark(true);localStorage.setItem('ibalz-theme','dark')}}>🌙 Gelap</button></div></div>}
         {accountTab === 'privacy' && <div className="account-section"><h3>Privasi akaun</h3><p className="account-description">Maklumat akaun digunakan untuk mengenal pasti akaun anda dan menyimpan sejarah perbualan supaya anda boleh menyambung semula chat pada masa akan datang.</p><div className="account-detail"><small>Maklumat profil</small><b>E-mel dan username akaun anda</b></div><div className="account-detail"><small>Sejarah chat</small><b>Disimpan pada akaun anda untuk akses semula</b></div><div className="account-detail"><small>Kata laluan</small><b>Kata laluan tidak dipaparkan dalam tetapan ini.</b></div></div>}
-        {accountTab === 'history' && <div className="account-section"><h3>Sejarah dan data</h3><p className="account-description">Perbualan yang disimpan pada akaun ini.</p><div className="account-detail"><small>Jumlah perbualan</small><b>{chats.length} perbualan</b></div><button className="account-wide-action" onClick={() => { setAccountOpen(false); setHistoryOpen(true); }}>Buka sejarah perbualan</button></div>}
+        {accountTab === 'history' && <div className="account-section">
+          <h3>Sejarah perbualan</h3>
+          <p className="account-description">Perbualan yang disimpan pada akaun ini.</p>
+          <div className="account-detail"><small>Jumlah perbualan</small><b>{chats.length} perbualan</b></div>
+          <button className="account-wide-action" onClick={() => { setAccountOpen(false); setHistoryOpen(true); }}>Buka sejarah perbualan</button>
+          <div className="account-data-divider"/>
+          <h3>Tingkatkan model untuk semua orang</h3>
+          <div className="account-toggle-row"><div><b>{improveModel ? 'Dihidupkan' : 'Dimatikan'}</b><small>Benarkan penggunaan perbualan untuk membantu meningkatkan IBalz AI pada masa hadapan.</small></div><button type="button" className={'account-switch-toggle ' + (improveModel ? 'on' : '')} role="switch" aria-checked={improveModel} disabled={trainingBusy} onClick={() => saveImproveModel(!improveModel)}><span/></button></div>
+          <p className="account-description">Pilihan ini disimpan pada akaun anda. Buat masa ini IBalz AI tidak menjalankan latihan model secara automatik menggunakan perbualan; suis ini hanya merekod pilihan anda.</p>
+          <div className="account-data-divider"/>
+          <h3>Eksport data</h3>
+          <p className="account-description">Muat turun salinan maklumat akaun dan sejarah perbualan anda dalam fail JSON.</p>
+          <button className="account-wide-action" onClick={exportAccountData}>Eksport data</button>
+          <div className="account-data-divider"/>
+          <h3>Padam akaun IBalz</h3>
+          <p className="account-description">Padam akaun anda secara kekal. Profil dan perbualan anda akan dipadam dan akaun tidak lagi muncul dalam senarai pengguna Admin. Tindakan ini tidak boleh dibatalkan.</p>
+          {!deleteConfirm ? <button className="account-delete-action" onClick={() => { setDeleteConfirm(true); setDeletePassword(''); setDataNotice(''); }}>Padam akaun IBalz</button> : <form className="account-delete-form" onSubmit={deleteMyAccount}><label>Masukkan kata laluan untuk mengesahkan<input type="password" autoComplete="current-password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} required/></label><div><button type="button" className="account-cancel-delete" onClick={() => {setDeleteConfirm(false);setDeletePassword('');}}>Batal</button><button type="submit" className="account-delete-action" disabled={deleteBusy || !deletePassword}>{deleteBusy ? 'Memadam...' : 'Sahkan padam akaun'}</button></div></form>}
+          {dataNotice && <p className="account-notice">{dataNotice}</p>}
+        </div>}
       </section>
     </div>}
     {historyOpen && <div className="history-backdrop" onClick={() => setHistoryOpen(false)}><aside className="history-drawer" onClick={e => e.stopPropagation()}>
