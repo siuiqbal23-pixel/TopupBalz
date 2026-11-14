@@ -1,4 +1,4 @@
-import { currentUser, authRequest } from '../../lib/user-auth.js';
+import { currentUser, authRequest, clearUserCookie } from '../../lib/user-auth.js';
 import { sbFetch } from '../../lib/supabase.js';
 
 export default async function handler(req, res) {
