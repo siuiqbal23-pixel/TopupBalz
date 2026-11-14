@@ -99,7 +99,7 @@ export default async function handler(req, res) {
       }
     }
     const languageInstruction = ({ ms: 'Balas semua jawapan dalam Bahasa Melayu.', en: 'Reply in English.', id: 'Jawab semua balasan dalam Bahasa Indonesia.', zh: '请使用简体中文回答。' })[language] || '';
-    const systemPrompt = SYSTEM_PROMPT + (languageInstruction ? '\\n\\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
+    const systemPrompt = SYSTEM_PROMPT + (languageInstruction ? '\n\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
       + '\n\nIkut gaya bahasa pengguna. Jika pengguna bercakap santai atau menggunakan slanga Malaysia, balas dengan gaya santai yang sepadan, bukan bahasa baku. Untuk sapaan ringkas, jawab ringkas seperti perbualan biasa.'
       + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
