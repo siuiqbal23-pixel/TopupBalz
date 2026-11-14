@@ -128,7 +128,7 @@ function App() {
     };
   }, [historyMenu]);
   const [busy, setBusy] = useState(false);
-  const [busyLabel, setBusyLabel] = useState('Sedang mencari di Google...');
+  const [busyLabel, setBusyLabel] = useState('IBalz sedang fikir...');
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
   const [messageMenu, setMessageMenu] = useState(-1);
@@ -272,7 +272,7 @@ function App() {
     const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '\n[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
     const nextMessages = [...messages, userMessage];
     const currentId = activeId || uid();
-    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusyLabel(!image && isImageRequest(text) ? 'Sedang menjana gambar...' : 'Sedang mencari di Google...'); setBusy(true);
+    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusyLabel(!image && isImageRequest(text) ? 'Sedang menjana gambar...' : 'IBalz sedang fikir...'); setBusy(true);
     try {
       if (!image && isImageRequest(text)) {
         const res = await fetch('/api/images', {
@@ -301,7 +301,7 @@ function App() {
     if (lastUserIndex < 0) return;
     const lastUser = messages[lastUserIndex];
     setMessages(messages.slice(0, lastUserIndex + 1));
-    setBusy(true); setBusyLabel('Sedang mencari di Google...'); setError('');
+    setBusy(true); setBusyLabel('IBalz sedang fikir...'); setError('');
     try {
       const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:lastUser.content, sessionId, visitorId:getVisitorId() }) });
       const data = await res.json();
