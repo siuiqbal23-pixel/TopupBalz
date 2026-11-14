@@ -110,7 +110,7 @@ export default function Admin() {
     finally { setBusyKey(false); }
   }
   async function logout() {
-    await fetch('/api/admin/logout', {method:'POST'});
+    await fetch('/api/admin/login', {method:'DELETE'});
     setLogged(false); setSelected(null); setMessages([]);
   }
 
