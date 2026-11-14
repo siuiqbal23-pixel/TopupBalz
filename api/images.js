@@ -2,6 +2,20 @@ import { sbFetch } from '../lib/supabase.js';
 import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
+function buildDetailedImagePrompt(idea) {
+  return [
+    'Create a polished, highly detailed image based on the user\'s original idea below.',
+    'Treat the original idea as the source of truth; preserve its main subject, requested objects, relationships, and intent. Do not replace or contradict them.',
+    'Professionally expand the concept using these four elements:',
+    '1. MAIN SUBJECT: clearly define the central subject, its appearance, pose, action, important features, materials, textures, and composition.',
+    '2. ART STYLE / MEDIUM: choose a coherent professional style and medium that best fits the idea (for example photorealistic photography, cinematic 3D render, digital illustration, watercolor, anime, or editorial design).',
+    '3. DETAILED ENVIRONMENT / BACKGROUND: create a fitting, layered setting with relevant foreground, midground, background, atmospheric depth, and small contextual details. Keep the subject visually clear.',
+    '4. LIGHTING / CAMERA: specify a fitting light source and direction, soft or dramatic shadows, color palette, mood, camera angle, framing, depth of field, and a suitable lens/look. Aim for crisp high-resolution detail and professional visual quality.',
+    'Use creative judgment for any unspecified details. Avoid asking questions during image rendering; choose tasteful defaults that support the original idea. Avoid clutter, random text, watermarks, logos, and unnecessary extra subjects.',
+    'Original user idea: ' + idea,
+  ].join('\\n');
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -12,6 +26,7 @@ export default async function handler(req, res) {
     if (!user?.id) return res.status(401).json({ error: 'Sila daftar atau Sign In dahulu untuk menggunakan IBalz AI.', code: 'AUTH_REQUIRED' });
     const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
     if (!prompt || prompt.length > 4000) return res.status(400).json({ error: 'Arahan gambar tidak sah atau terlalu panjang.' });
+    const detailedPrompt = buildDetailedImagePrompt(prompt);
 
     const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(cloudflare_api_token,cloudflare_account_id)');
     const values = Object.fromEntries((rows || []).map(row => [row.key, decryptSecret(row.value)]));
@@ -22,7 +37,7 @@ export default async function handler(req, res) {
       const upstream = await fetch('https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(accountId) + '/ai/run/@cf/black-forest-labs/flux-1-schnell', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: detailedPrompt }),
       });
       const data = await upstream.json();
       if (!upstream.ok || data?.success === false) {
@@ -41,7 +56,7 @@ export default async function handler(req, res) {
         headers: { Authorization: 'Bearer ' + openAiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2.5-flare',
-          prompt, size: '1024x1024', quality: 'medium', output_format: 'png', n: 1,
+          prompt: detailedPrompt, size: '1024x1024', quality: 'medium', output_format: 'png', n: 1,
         }),
       });
       const data = await upstream.json();
