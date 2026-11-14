@@ -139,6 +139,18 @@ function App() {
     })();
     return () => { alive = false; };
   }, []);
+  useEffect(() => {
+    if (!signedIn || !account?.id) return;
+    const sendPresence = () => {
+      if (document.visibilityState === 'visible') {
+        fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'presence' }) }).catch(() => {});
+      }
+    };
+    sendPresence();
+    const timer = setInterval(sendPresence, 30000);
+    document.addEventListener('visibilitychange', sendPresence);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', sendPresence); };
+  }, [signedIn, account?.id]);
   const [chats, setChats] = useState([]);
   const [activeId, setActiveId] = useState('');
   const [messages, setMessages] = useState(starter);
