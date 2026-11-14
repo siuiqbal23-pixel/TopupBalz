@@ -347,7 +347,9 @@ function App() {
       else await copyMessage(text);
     } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
   }
-  async function signOut() {\n    try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } finally { setSignedIn(false); setError("Anda telah Sign Out."); }\n  }\n  const visibleChats = chats
+  async function signOut() {
+    try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } finally { setSignedIn(false); setError("Anda telah Sign Out."); }
+  }\n  const visibleChats = chats
     .filter(c => Boolean(c.archived) === showArchived && (c.title || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
