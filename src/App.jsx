@@ -520,7 +520,7 @@ function App() {
       <section className="account-panel account-fullscreen" role="dialog" aria-modal="true" aria-label="Tetapan IBalz" onClick={e => e.stopPropagation()}>
         <div className="account-panel-head">
           <div className="account-head-title">
-            {(accountTab !== 'menu') && <button className="account-back-btn" onClick={() => { if (accountTab === 'settings' && dataSubTab === 'memory') setDataSubTab(''); else setAccountTab('menu'); }} aria-label="Kembali">‹</button>}
+            {<button className="account-back-btn" onClick={() => { if (accountTab === 'menu') setAccountOpen(false); else if (accountTab === 'settings' && dataSubTab === 'memory') setDataSubTab(''); else setAccountTab('menu'); }} aria-label="Kembali">‹</button>}
             <div><small>IBALZ ACCOUNT</small><h2>{accountTab === 'menu' ? 'Tetapan' : (accountTab === 'settings' && dataSubTab === 'memory' ? 'Memori' : ({info:'Akaun',settings:'Sesuaikan data',general:'Umum',privacy:'Pusat privasi',history:'Sejarah dan data'}[accountTab] || 'Tetapan'))}</h2></div>
           </div>
           <div className="account-head-actions">
