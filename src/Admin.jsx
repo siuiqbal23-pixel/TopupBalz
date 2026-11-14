@@ -18,6 +18,8 @@ export default function Admin() {
   const [googleSearchConfigured, setGoogleSearchConfigured] = useState(false);
   const [adminInstructions, setAdminInstructions] = useState([]);
   const [instructionDraft, setInstructionDraft] = useState('');
+  const [editingInstruction, setEditingInstruction] = useState(null);
+  const [editingInstructionDraft, setEditingInstructionDraft] = useState('');
   const [savingInstruction, setSavingInstruction] = useState(false);
   const [configured, setConfigured] = useState({});
   const [busyKey, setBusyKey] = useState(false);
@@ -112,6 +114,29 @@ export default function Admin() {
     } catch (e) { setNotice(e.message); }
     finally { setSavingInstruction(false); }
   }
+  function startEditAdminInstruction(index) {
+    setEditingInstruction(index);
+    setEditingInstructionDraft(adminInstructions[index]?.content || '');
+    setNotice('');
+  }
+  function cancelEditAdminInstruction() {
+    setEditingInstruction(null);
+    setEditingInstructionDraft('');
+  }
+  async function saveEditedAdminInstruction(index) {
+    const content = editingInstructionDraft.trim();
+    if (!content || savingInstruction) return;
+    setSavingInstruction(true); setNotice('');
+    try {
+      const next = adminInstructions.map((item, i) => i === index ? { ...item, content, updated_at: new Date().toISOString() } : item);
+      const r = await fetch('/api/admin/settings', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({integration:'admin_instructions', messages:next}) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Gagal mengemas kini arahan.');
+      setAdminInstructions(next);
+      cancelEditAdminInstruction();
+      setNotice('Arahan berjaya dikemas kini dan disimpan.');
+    } catch (e) { setNotice(e.message); }
+    finally { setSavingInstruction(false); }
+  }
   async function deleteAdminInstruction(index) {
     if (savingInstruction) return;
     if (!window.confirm('Padam arahan ini sahaja? Arahan lain akan kekal.')) return;
@@ -168,7 +193,11 @@ export default function Admin() {
     <main className="admin-wrap">{notice&&<div className="admin-notice">{notice}</div>}{activeSection === 'overview' && <><div className="admin-heading"><div><p className="admin-kicker">CONTROL CENTER</p><h1>Dashboard</h1><p className="admin-muted">Ringkasan pengurusan IBalz AI.</p></div></div><div className="admin-overview-grid"><article className="admin-panel admin-overview-card"><span>Jumlah akaun</span><strong>{users.length}</strong><small>Akaun berdaftar</small></article><article className="admin-panel admin-overview-card"><span>Sejarah chat</span><strong>{sessions.length}</strong><small>Perbualan tersimpan</small></article><article className="admin-panel admin-overview-card"><span>Penyedia AI</span><strong>{provider.toUpperCase()}</strong><small>{configured[provider] ? 'API tersedia' : 'Belum dikonfigurasi'}</small></article></div><section className="admin-panel"><div className="admin-panel-title"><div><h2>Selamat datang ke IBalz Control Center</h2><p>Pilih bahagian melalui menu tiga garis di atas. Setiap bahagian akan dibuka di ruang ini.</p></div></div></section></>}{activeSection === 'ai-chat' && <section className="admin-panel" id="ai-chat">
   <div className="admin-panel-title"><div><h2>Chat Arahan AI</h2><p>Tulis arahan seperti berbual. Setiap arahan disimpan dan digunakan oleh IBalz AI untuk semua pelanggan, termasuk penjanaan gambar.</p></div><span className="admin-status on">{adminInstructions.length} arahan</span></div>
   <div style={{background:'#ffffff',color:'#171717',border:'1px solid #e5e7eb',borderRadius:16,padding:16,minHeight:300,maxHeight:480,overflowY:'auto',display:'flex',flexDirection:'column',gap:14}}>
-    {adminInstructions.length===0 ? <div style={{margin:'auto',maxWidth:420,textAlign:'center',padding:24,color:'#6b7280'}}><div style={{fontSize:30,marginBottom:10}}>✦</div><b style={{display:'block',color:'#171717',marginBottom:8}}>Chat Arahan AI</b><span>Hantar mesej di bawah untuk menetapkan cara IBalz AI menjawab pelanggan dan menjana gambar.</span><p style={{fontSize:13,lineHeight:1.6}}>Contoh: “Apabila pelanggan minta gambar orang bermain Rubik’s Cube, hasilkan orang yang sedang bermain kiub Rubik. Jangan tukar subjek.”</p></div> : adminInstructions.map((item,index)=><article key={item.created_at || index} style={{alignSelf:'flex-end',width:'fit-content',maxWidth:'92%',background:'#f3f4f6',color:'#171717',border:'1px solid #e5e7eb',borderRadius:'16px 16px 4px 16px',padding:'12px 14px'}}><b style={{fontSize:12,color:'#6b7280'}}>ARAHAN ADMIN</b><p style={{whiteSpace:'pre-wrap',margin:'6px 0',lineHeight:1.55}}>{item.content}</p><div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}><small style={{color:'#6b7280',fontSize:11}}>{item.created_at ? new Date(item.created_at).toLocaleString('ms-MY') : ''}</small><button type="button" disabled={savingInstruction} onClick={()=>deleteAdminInstruction(index)} style={{background:'#fff1f2',color:'#be123c',border:'1px solid #fecdd3',borderRadius:8,padding:'5px 9px',fontSize:12,fontWeight:600,cursor:'pointer'}}>Padam arahan</button></div></article>)}
+    {adminInstructions.length===0 ? <div style={{margin:'auto',maxWidth:420,textAlign:'center',padding:24,color:'#6b7280'}}><div style={{fontSize:30,marginBottom:10}}>✦</div><b style={{display:'block',color:'#171717',marginBottom:8}}>Chat Arahan AI</b><span>Hantar mesej di bawah untuk menetapkan cara IBalz AI menjawab pelanggan dan menjana gambar.</span><p style={{fontSize:13,lineHeight:1.6}}>Contoh: “Apabila pelanggan minta gambar orang bermain Rubik’s Cube, hasilkan orang yang sedang bermain kiub Rubik. Jangan tukar subjek.”</p></div> : adminInstructions.map((item,index)=><article key={item.created_at || index} style={{alignSelf:'flex-end',width:'fit-content',maxWidth:'92%',background:'#f3f4f6',color:'#171717',border:'1px solid #e5e7eb',borderRadius:'16px 16px 4px 16px',padding:'12px 14px'}}>
+      <b style={{fontSize:12,color:'#6b7280'}}>ARAHAN ADMIN</b>
+      {editingInstruction === index ? <><textarea value={editingInstructionDraft} onChange={e=>setEditingInstructionDraft(e.target.value)} rows={4} maxLength={4000} style={{display:'block',width:'100%',minWidth:240,boxSizing:'border-box',marginTop:8,padding:10,border:'1px solid #d1d5db',borderRadius:9,background:'#fff',color:'#111827',font:'inherit'}}/><div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:9}}><button type="button" disabled={savingInstruction} onClick={cancelEditAdminInstruction} style={{background:'#fff',color:'#374151',border:'1px solid #d1d5db',borderRadius:8,padding:'6px 10px',fontSize:12,cursor:'pointer'}}>Batal</button><button type="button" disabled={savingInstruction || !editingInstructionDraft.trim()} onClick={()=>saveEditedAdminInstruction(index)} style={{background:'#f97316',color:'#fff',border:0,borderRadius:8,padding:'6px 10px',fontSize:12,fontWeight:600,cursor:'pointer'}}>{savingInstruction?'Menyimpan...':'Simpan edit'}</button></div></> : <p style={{whiteSpace:'pre-wrap',margin:'6px 0',lineHeight:1.55}}>{item.content}</p>}
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginTop:8}}><small style={{color:'#6b7280',fontSize:11}}>{item.created_at ? new Date(item.created_at).toLocaleString('ms-MY') : ''}</small><div style={{display:'flex',gap:7}}>{editingInstruction !== index && <button type="button" disabled={savingInstruction} onClick={()=>startEditAdminInstruction(index)} style={{background:'#fff7ed',color:'#c2410c',border:'1px solid #fed7aa',borderRadius:8,padding:'5px 9px',fontSize:12,fontWeight:600,cursor:'pointer'}}>Edit</button>}<button type="button" disabled={savingInstruction} onClick={()=>deleteAdminInstruction(index)} style={{background:'#fff1f2',color:'#be123c',border:'1px solid #fecdd3',borderRadius:8,padding:'5px 9px',fontSize:12,fontWeight:600,cursor:'pointer'}}>Padam</button></div></div>
+    </article>)}
   </div>
   <form onSubmit={saveAdminInstruction} style={{display:'flex',flexDirection:'column',gap:10,marginTop:14,background:'#ffffff',padding:14,border:'1px solid #e5e7eb',borderRadius:16}}>
     <label style={{fontSize:13,fontWeight:600,color:'#374151'}}>Tulis arahan untuk semua pelanggan</label>
