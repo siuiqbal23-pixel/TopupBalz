@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const message = typeof body.message === 'string' ? body.message.trim() : '';
     const image = typeof body.image === 'string' ? body.image : '';
     const visitorId = typeof body.visitorId === 'string' ? body.visitorId.slice(0, 80) : '';
-    const signedInUser = await currentUser(req);
+    const signedInUser = await currentUser(req, res);
     if (!signedInUser?.id) return res.status(401).json({ error: 'Sila daftar atau Sign In dahulu untuk menggunakan IBalz AI.', code: 'AUTH_REQUIRED' });
     let sessionId = typeof body.sessionId === 'string' ? body.sessionId : '';
     if (!message || message.length > 10000 || !visitorId) return res.status(400).json({ error: 'Mesej tidak sah atau kosong.' });
