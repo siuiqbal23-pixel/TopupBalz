@@ -109,6 +109,7 @@ function App() {
   const [account, setAccount] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState('info');
+  const [dataSubTab, setDataSubTab] = useState('memory');
   const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('ibalz-ai-language') || 'auto');
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
   const [passwordNotice, setPasswordNotice] = useState('');
@@ -546,12 +547,15 @@ function App() {
         {accountTab === 'general' && <div className="account-section"><h3>Penampilan</h3><p className="account-description">Pilih tema paparan IBalz AI.</p><div className="account-theme-options"><button className={!dark?'active':''} onClick={() => {setDark(false);localStorage.setItem('ibalz-theme','light')}}>☀️ Cerah</button><button className={dark?'active':''} onClick={() => {setDark(true);localStorage.setItem('ibalz-theme','dark')}}>🌙 Gelap</button></div><div className="account-data-divider"/><h3>Bahasa jawapan AI</h3><p className="account-description">Pilih bahasa untuk jawapan IBalz AI. Auto akan ikut bahasa yang anda gunakan.</p><label className="account-language-label">Bahasa AI<select value={aiLanguage} onChange={e => {setAiLanguage(e.target.value);localStorage.setItem('ibalz-ai-language',e.target.value);}}><option value="auto">Automatik (Auto)</option><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="id">Bahasa Indonesia</option><option value="zh">中文</option></select></label><p className="account-description">Tetapan ini disimpan pada peranti ini.</p></div>}
         {accountTab === 'privacy' && <div className="account-section"><h3>Privasi akaun</h3><p className="account-description">Maklumat akaun digunakan untuk mengenal pasti akaun anda dan menyimpan sejarah perbualan supaya anda boleh menyambung semula chat pada masa akan datang.</p><div className="account-detail"><small>Maklumat profil</small><b>E-mel dan username akaun anda</b></div><div className="account-detail"><small>Sejarah chat</small><b>Disimpan pada akaun anda untuk akses semula</b></div><div className="account-detail"><small>Kata laluan</small><b>Kata laluan tidak dipaparkan dalam tetapan ini.</b></div></div>}
         {accountTab === 'settings' && <div className="account-section memory-section">
+          <nav className="data-subtabs" aria-label="Tab Sesuaikan data"><button type="button" className={dataSubTab === 'memory' ? 'active' : ''} onClick={() => setDataSubTab('memory')}>Memori</button></nav>
+          {dataSubTab === 'memory' && <>
           <h3>Memori</h3>
           <p className="account-description">IBalz boleh menyimpan maklumat berguna yang pelanggan kongsi sendiri seperti bahasa pilihan, minat, hobi, projek dan pilihan jawapan. Memori ini digunakan untuk menyesuaikan jawapan akan datang. Pelanggan hanya boleh melihat kandungan memori; mereka tidak boleh mengeditnya.</p>
           <div className={'memory-status ' + (memoryEnabled ? 'enabled' : 'disabled')}><span className="memory-status-dot"/><div><b>Memori {memoryEnabled ? 'dihidupkan' : 'dimatikan'}</b><small>{memoryEnabled ? 'IBalz boleh menyimpan dan menggunakan memori yang sesuai.' : 'IBalz tidak akan menyimpan atau menggunakan memori baharu.'}</small></div></div>
           <div className="memory-list">
             {memories.length ? memories.map((item, index) => <article className="memory-item" key={item.id || index}><span className="memory-item-icon">✦</span><div><p>{item.content}</p><small>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Memori tersimpan'}</small></div></article>) : <div className="memory-empty"><span>✦</span><b>Belum ada memori</b><small>Apabila IBalz menemui maklumat berguna untuk diingati dalam perbualan, ia akan dipaparkan di sini.</small></div>}
           </div>
+          </>}
         </div>}
         {accountTab === 'history' && <div className="account-section">
           <div className="account-data-divider"/>
