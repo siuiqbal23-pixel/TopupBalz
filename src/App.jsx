@@ -552,6 +552,7 @@ function App() {
           <div className="memory-list">
             {memories.length ? memories.map((item, index) => <article className="memory-item" key={item.id || index}><span className="memory-item-icon">✦</span><div><p>{item.content}</p><small>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Memori tersimpan'}</small></div></article>) : <div className="memory-empty"><span>✦</span><b>Belum ada memori</b><small>Apabila IBalz menemui maklumat berguna untuk diingati dalam perbualan, ia akan dipaparkan di sini.</small></div>}
           </div>
+        </div>}
         {accountTab === 'history' && <div className="account-section">
           <div className="account-data-divider"/>
           <h3>Tingkatkan model untuk semua orang</h3>
