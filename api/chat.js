@@ -90,6 +90,7 @@ export default async function handler(req, res) {
       }
     }
     const systemPrompt = SYSTEM_PROMPT + searchContext
+      + '\n\nIkut gaya bahasa pengguna. Jika pengguna bercakap santai atau menggunakan slanga Malaysia, balas dengan gaya santai yang sepadan, bukan bahasa baku. Untuk sapaan ringkas, jawab ringkas seperti perbualan biasa.'
       + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
     const lastUser = [...messages].map((m, i) => ({ ...m, i })).reverse().find(m => m.role === 'user');
