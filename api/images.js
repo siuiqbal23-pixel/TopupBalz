@@ -3,33 +3,28 @@ import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
 function buildDetailedImagePrompt(idea, conversation) {
-  const cleanIdea = String(idea || '').replace(/\s+/g, ' ').trim();
+  const cleanIdea = String(idea || '').replace(/\\s+/g, ' ').trim();
   const recent = (Array.isArray(conversation) ? conversation : [])
     .filter(item => item && (item.role === 'user' || item.role === 'assistant'))
-    .slice(-30)
+    .slice(-12)
     .map(item => ({
       role: item.role,
-      content: String(item.content || '').replace(/\s+/g, ' ').trim().slice(0, 500),
+      content: String(item.content || '').replace(/\\s+/g, ' ').trim().slice(0, 300),
     }))
     .filter(item => item.content);
 
-  const refersBack = /\b(tadi|sebelum ini|yang tadi|macam tadi|gambar tadi|gambar itu|yang itu|sama macam|ubah|tukar|edit|jadikan|buat lagi|previous|earlier|that one|same|this image)\b/i.test(cleanIdea);
+  // Only attach prior context when the user clearly asks to continue/edit an earlier image.
+  const refersBack = /\\b(tadi|sebelum ini|yang tadi|macam tadi|gambar tadi|gambar itu|yang itu|sama macam|ubah|tukar|edit|jadikan|buat lagi|previous|earlier|that one|same|this image)\\b/i.test(cleanIdea);
   const context = refersBack
-    ? recent.slice(-6).map(item => (item.role === 'user' ? 'USER: ' : 'ASSISTANT: ') + item.content).join('\n').slice(-240)
+    ? recent.slice(-4).map(item => (item.role === 'user' ? 'USER: ' : 'ASSISTANT: ') + item.content).join('\\n').slice(-350)
     : '';
 
-  const rules = [
-    'Write a clear English image prompt. Understand Malay colloquial wording and typos accurately.',
-    'The latest request is authoritative. Name its exact subject and action first; never substitute another subject.',
-    'Example: “harimau nyanyi” = a tiger singing. Show the tiger as the singer, not a father, child, or human.',
-    'Use only requested subjects and quantities. Do not add people, family members, animals, or extra characters unless requested.',
-    'Use old chat only for a clear follow-up reference; ignore it for a new standalone request. Latest request overrides older details.',
-    'Add fitting style, background, lighting, and camera details without changing the requested subject/action. No unrequested text or watermark.',
-  ].join(' ');
-  const suffix = ' Return only the final image prompt.';
-
-  // Keep the complete payload under Cloudflare FLUX's 2048-character prompt limit.
-  const prefix = rules + (context ? ' Relevant earlier context: ' + context : '') + ' Latest user request: ';
+  // Keep the user's latest request first. Do not include illustrative examples:
+  // examples can accidentally become subjects in image models.
+  const instruction = 'Create an image matching the user request exactly. The latest request defines the only main subject and its action. Interpret Malay, informal Malay, spelling mistakes, and mixed-language wording by meaning. Do not replace the requested subject with anything from earlier conversation. Do not add unrelated people, animals, objects, or text. Make the requested action clearly visible. Choose a suitable realistic composition, background, and lighting. ';
+  const contextText = context ? ' Earlier context, only for resolving the follow-up: ' + context + '. ' : '';
+  const prefix = instruction + contextText + 'User request: ';
+  const suffix = '. Follow the user request literally; no unrelated subject, no watermark.';
   const available = Math.max(1, 2048 - prefix.length - suffix.length);
   const requestText = cleanIdea.length > available
     ? cleanIdea.slice(0, available - 1).trimEnd() + '…'
