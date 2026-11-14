@@ -499,3 +499,12 @@
 .account-theme-options button.active{border-color:var(--orange);background:var(--soft)}
 @keyframes accountScreenIn{from{transform:translateX(12px);opacity:.7}to{transform:translateX(0);opacity:1}}
 @media(max-width:520px){.account-panel.account-fullscreen{padding:17px 16px max(24px,env(safe-area-inset-bottom))}.account-panel-head{top:-17px}.account-settings-list>button{min-height:68px}}
+
+
+/* Header account avatar and drawer new-chat action */
+.top-account-avatar{width:43px;height:43px;display:grid;place-items:center;padding:2px;border:1px solid var(--line);border-radius:50%;background:var(--panel);cursor:pointer;color:var(--text)}
+.top-account-avatar span{width:37px;height:37px;display:grid;place-items:center;border-radius:50%;background:var(--orange);color:#21170f;font:800 17px Manrope}
+.drawer-new-chat{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;margin:0 0 14px;padding:10px 13px;border:1px solid var(--line);border-radius:13px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer;font:700 13px 'DM Sans'}
+.drawer-new-chat>span{width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:var(--soft);color:var(--orange)}
+.drawer-new-chat svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.drawer-new-chat:active{transform:scale(.99)}
