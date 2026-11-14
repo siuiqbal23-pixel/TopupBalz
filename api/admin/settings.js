@@ -13,19 +13,40 @@ export default async function handler(req, res) {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Sila log masuk sebagai admin.' });
   try {
     if (req.method === 'GET') {
-      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider', 'cloudflare_api_token', 'cloudflare_account_id', 'google_grounding_api_key'];
+      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider', 'cloudflare_api_token', 'cloudflare_account_id', 'google_grounding_api_key', 'admin_ai_instructions'];
       const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(' + keys.join(',') + ')');
       const found = new Set((rows || []).map(row => row.key));
       const activeRow = (rows || []).find(row => row.key === 'active_ai_provider');
+      const instructionRow = (rows || []).find(row => row.key === 'admin_ai_instructions');
+      let adminInstructions = [];
+      try { adminInstructions = JSON.parse(instructionRow?.value || '[]'); } catch { adminInstructions = []; }
+      if (!Array.isArray(adminInstructions)) adminInstructions = [];
       return res.status(200).json({
         configured: found.has('groq_api_key'),
         providers: { ...Object.fromEntries(Object.entries(PROVIDER_KEYS).map(([name, key]) => [name, found.has(key)])), cloudflare: found.has('cloudflare_api_token') && found.has('cloudflare_account_id') },
         activeProvider: activeRow?.value || 'groq',
         cloudflareConfigured: found.has('cloudflare_api_token') && found.has('cloudflare_account_id'),
         googleSearchConfigured: found.has('google_grounding_api_key'),
+        adminInstructions,
       });
     }
     if (req.method === 'POST') {
+      if (req.body?.integration === 'admin_instructions') {
+        const messages = Array.isArray(req.body?.messages) ? req.body.messages : null;
+        if (!messages || messages.length > 30) return res.status(400).json({ error: 'Senarai arahan tidak sah.' });
+        const cleaned = messages.map(item => ({
+          role: 'admin',
+          content: typeof item?.content === 'string' ? item.content.trim().slice(0, 4000) : '',
+          created_at: typeof item?.created_at === 'string' ? item.created_at : new Date().toISOString(),
+        })).filter(item => item.content).slice(-30);
+        if (cleaned.reduce((sum, item) => sum + item.content.length, 0) > 16000) return res.status(400).json({ error: 'Jumlah arahan terlalu panjang. Padam beberapa arahan lama.' });
+        await sbFetch('ibalz_settings?on_conflict=key', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify([{ key: 'admin_ai_instructions', value: JSON.stringify(cleaned), updated_at: new Date().toISOString() }]),
+        });
+        return res.status(200).json({ ok: true, messages: cleaned });
+      }
       if (req.body?.integration === 'google_search') {
         const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
         if (apiKey.length < 12 || apiKey.length > 500) return res.status(400).json({ error: 'Gemini API Key tidak sah.' });
