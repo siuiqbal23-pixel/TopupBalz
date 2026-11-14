@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (!isAdmin(req)) return res.status(401).json({ error: 'Sila log masuk sebagai admin.' });
   try {
     if (req.method === 'GET') {
-      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider', 'cloudflare_api_token', 'cloudflare_account_id', 'google_search_api_key', 'google_search_cx'];
+      const keys = [...Object.values(PROVIDER_KEYS), 'active_ai_provider', 'cloudflare_api_token', 'cloudflare_account_id', 'google_grounding_api_key'];
       const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(' + keys.join(',') + ')');
       const found = new Set((rows || []).map(row => row.key));
       const activeRow = (rows || []).find(row => row.key === 'active_ai_provider');
@@ -22,27 +22,22 @@ export default async function handler(req, res) {
         providers: { ...Object.fromEntries(Object.entries(PROVIDER_KEYS).map(([name, key]) => [name, found.has(key)])), cloudflare: found.has('cloudflare_api_token') && found.has('cloudflare_account_id') },
         activeProvider: activeRow?.value || 'groq',
         cloudflareConfigured: found.has('cloudflare_api_token') && found.has('cloudflare_account_id'),
-        googleSearchConfigured: found.has('google_search_api_key') && found.has('google_search_cx'),
+        googleSearchConfigured: found.has('google_grounding_api_key'),
       });
     }
     if (req.method === 'POST') {
       if (req.body?.integration === 'google_search') {
         const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
-        const cx = typeof req.body?.cx === 'string' ? req.body.cx.trim() : '';
-        if (apiKey.length < 12 || apiKey.length > 500 || !cx || cx.length > 500) {
-          return res.status(400).json({ error: 'Google API Key atau Search Engine ID (CX) tidak sah.' });
+        if (apiKey.length < 12 || apiKey.length > 500) return res.status(400).json({ error: 'Gemini API Key tidak sah.' });
+        const check = await fetch('https://generativelanguage.googleapis.com/v1beta/models', { headers: { 'x-goog-api-key': apiKey } });
+        if (!check.ok) {
+          const checkData = await check.json().catch(() => ({}));
+          return res.status(400).json({ error: checkData?.error?.message || 'Gemini API Key ditolak. Semak key dan pastikan ia aktif.' });
         }
-        const params = new URLSearchParams({ key: apiKey, cx, q: 'IBalz AI', num: '1' });
-        const check = await fetch('https://www.googleapis.com/customsearch/v1?' + params.toString());
-        const checkData = await check.json().catch(() => ({}));
-        if (!check.ok) return res.status(400).json({ error: checkData?.error?.message || 'Google Search API tidak dapat disahkan. Semak API Key, CX dan akses Custom Search JSON API.' });
         await sbFetch('ibalz_settings?on_conflict=key', {
           method: 'POST',
           headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify([
-            { key: 'google_search_api_key', value: encryptSecret(apiKey), updated_at: new Date().toISOString() },
-            { key: 'google_search_cx', value: encryptSecret(cx), updated_at: new Date().toISOString() },
-          ]),
+          body: JSON.stringify([{ key: 'google_grounding_api_key', value: encryptSecret(apiKey), updated_at: new Date().toISOString() }]),
         });
         return res.status(200).json({ ok: true, integration: 'google_search' });
       }
