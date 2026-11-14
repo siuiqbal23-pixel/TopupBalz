@@ -347,7 +347,7 @@ function App() {
       else await copyMessage(text);
     } catch (e) { if (e.name !== 'AbortError') setError('Tidak dapat berkongsi mesej.'); }
   }
-  const visibleChats = chats
+  async function signOut() {\n    try { await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); } finally { setSignedIn(false); setError("Anda telah Sign Out."); }\n  }\n  const visibleChats = chats
     .filter(c => Boolean(c.archived) === showArchived && (c.title || '').toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
@@ -356,7 +356,7 @@ function App() {
       <div className="popup-anchor new-chat-anchor"><button className="top-action new-action" onClick={() => setNewMenuOpen(v => !v)} title="Chat baharu">＋ <span>Chat baharu</span></button>
         {newMenuOpen && <div className="top-popup new-popup"><button onClick={() => { startNew(); setNewMenuOpen(false); }}><span>＋</span><div><b>Chat baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
       </div>
-      <a className="top-action auth-top-link" href={signedIn ? "/api/auth/logout" : "/login"}>{signedIn ? "Sign Out" : "Sign In"}</a>
+      {signedIn ? <button className="top-action auth-top-link" type="button" onClick={signOut}>Sign Out</button> : <a className="top-action auth-top-link" href="/login">Sign In</a>}
     </header>
     <main className="shell">
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
