@@ -8,11 +8,11 @@ function buildDetailedImagePrompt(idea, conversation) {
     .slice(-30)
     .map(item => ({
       role: item.role,
-      content: String(item.content || '').replace(/\\s+/g, ' ').trim().slice(0, 1400),
+      content: String(item.content || '').replace(/\s+/g, ' ').trim().slice(0, 1400),
     }))
     .filter(item => item.content)
     .map(item => (item.role === 'user' ? 'USER' : 'ASSISTANT') + ': ' + item.content)
-    .join('\\n');
+    .join('\n');
 
   return [
     'You are preparing a detailed image-generation prompt. Carefully understand the user\'s actual intended image by reading the recent conversation context and the latest request.',
@@ -28,7 +28,7 @@ function buildDetailedImagePrompt(idea, conversation) {
     context || '(No earlier conversation supplied.)',
     'Latest image request: ' + idea,
     'Return only the final image-generation prompt in English. Do not ask questions; if a minor detail is missing, choose a sensible default.',
-  ].join('\\n\\n');
+  ].join('\n\n');
 }
 
 export default async function handler(req, res) {
