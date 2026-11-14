@@ -2,6 +2,42 @@ import { sbFetch } from '../lib/supabase.js';
 import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
+
+async function extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages }) {
+  const prompt = 'Extract only useful, stable memories explicitly supported by this conversation. Return ONLY a JSON array of short strings, or [] if nothing should be remembered. Save stable preferences, ongoing projects, devices the user uses, and explicit requests to remember. Never save passwords, API keys, OTPs, contact details, precise addresses, financial account/payment details, or sensitive personal data such as health, religion, political views, ethnicity, or sexuality. Do not infer facts. Maximum 3 items, each under 180 characters. Conversation: ' + JSON.stringify(messages.slice(-8).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 900) : '[image]' })));
+  let response, data, content = '';
+  if (provider === 'cloudflare') {
+    response = await fetch('https://api.cloudflare.com/client/v4/accounts/' + cloudflareAccountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + cloudflareToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'system', content: 'You are a private memory extraction helper. Output valid JSON only.' }, { role: 'user', content: prompt }], max_tokens: 300 }),
+    });
+    data = await response.json();
+    content = data.result?.response || data.result?.output || '';
+  } else if (provider === 'gemini') {
+    response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: 'You are a private memory extraction helper. Output valid JSON only.' }] }, generationConfig: { temperature: 0.1, maxOutputTokens: 300 } }),
+    });
+    data = await response.json();
+    content = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
+  } else {
+    response = await fetch(provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: provider === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are a private memory extraction helper. Output valid JSON only.' }, { role: 'user', content: prompt }], temperature: 0.1, max_tokens: 300 }),
+    });
+    data = await response.json();
+    content = data.choices?.[0]?.message?.content || '';
+  }
+  if (!response.ok || data?.success === false) return [];
+  const cleaned = String(content).replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+  const start = cleaned.indexOf('['), end = cleaned.lastIndexOf(']');
+  if (start < 0 || end <= start) return [];
+  try {
+    const parsed = JSON.parse(cleaned.slice(start, end + 1));
+    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string').map(item => item.trim()).filter(item => item.length > 0 && item.length <= 180).slice(0, 3) : [];
+  } catch { return []; }
+}
+
 const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Guna gaya bahasa yang sama dengan pengguna. Jika pengguna guna bahasa Melayu santai, slanga Malaysia atau bahasa pasar seperti wei, weh, bro, kau, aku, balas secara santai dan semula jadi; jangan tiba-tiba guna bahasa baku atau gaya ensiklopedia. Untuk sapaan ringkas seperti wei/hi/hello, balas ringkas dan mesra, contohnya: Weii, ada apa? Jangan huraikan maksud perkataan sapaan. Jangan beri senarai makna yang tidak diminta. Balas dalam bahasa yang digunakan pengguna. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
 
 export default async function handler(req, res) {
@@ -98,8 +134,15 @@ export default async function handler(req, res) {
         console.error('Gemini Google Search grounding failed:', searchError?.message || searchError);
       }
     }
+    const profileRows = await sbFetch('ibalz_user_profiles?select=memory_enabled,memories&id=eq.' + encodeURIComponent(signedInUser.id) + '&limit=1');
+    const memoryProfile = profileRows?.[0] || {};
+    const memoryEnabled = memoryProfile.memory_enabled !== false;
+    const savedMemories = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
+    const memoryContext = memoryEnabled && savedMemories.length
+      ? '\\n\\nMEMORI PENGGUNA YANG DISIMPAN (gunakan hanya jika relevan, jangan ulang senarai ini kepada pengguna):\\n- ' + savedMemories.map(item => item.content).filter(Boolean).join('\\n- ')
+      : '';
     const languageInstruction = ({ ms: 'Balas semua jawapan dalam Bahasa Melayu.', en: 'Reply in English.', id: 'Jawab semua balasan dalam Bahasa Indonesia.', zh: '请使用简体中文回答。' })[language] || '';
-    const systemPrompt = SYSTEM_PROMPT + (languageInstruction ? '\n\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
+    const systemPrompt = SYSTEM_PROMPT + memoryContext + (languageInstruction ? '\n\nARAHAN BAHASA PENGGUNA: ' + languageInstruction + ' Kekalkan nama khas, kod, istilah teknikal dan petikan asal apabila perlu.' : '') + searchContext
       + '\n\nIkut gaya bahasa pengguna. Jika pengguna bercakap santai atau menggunakan slanga Malaysia, balas dengan gaya santai yang sepadan, bukan bahasa baku. Untuk sapaan ringkas, jawab ringkas seperti perbualan biasa.'
       + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
@@ -169,6 +212,25 @@ export default async function handler(req, res) {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ updated_at: new Date().toISOString() }),
     });
+    if (memoryEnabled) {
+      try {
+        const candidates = await extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }] });
+        if (candidates.length) {
+          const existing = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
+          const normalized = new Set(existing.map(item => String(item.content || '').toLowerCase().trim()));
+          const additions = candidates.filter(content => !normalized.has(content.toLowerCase().trim()))
+            .map(content => ({ id: globalThis.crypto?.randomUUID?.() || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2)), content, created_at: new Date().toISOString() }));
+          if (additions.length) {
+            await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(signedInUser.id), {
+              method: 'PATCH', headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({ memories: [...existing, ...additions].slice(-30) }),
+            });
+          }
+        }
+      } catch (memoryError) {
+        console.error('IBalz memory save failed:', memoryError?.message || memoryError);
+      }
+    }
     return res.status(200).json({ reply, sessionId, provider, searchSources, searchQueries });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Ralat pelayan semasa menyimpan chat.' });
