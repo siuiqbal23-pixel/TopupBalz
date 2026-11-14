@@ -1,7 +1,7 @@
 import { sbFetch } from '../lib/supabase.js';
 import { decryptSecret } from '../lib/secret-box.js';
 
-const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Balas dalam bahasa yang digunakan pengguna. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
+const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Guna gaya bahasa yang sama dengan pengguna. Jika pengguna guna bahasa Melayu santai, slanga Malaysia atau bahasa pasar seperti wei, weh, bro, kau, aku, balas secara santai dan semula jadi; jangan tiba-tiba guna bahasa baku atau gaya ensiklopedia. Untuk sapaan ringkas seperti wei/hi/hello, balas ringkas dan mesra, contohnya: Weii, ada apa? Jangan huraikan maksud perkataan sapaan. Jangan beri senarai makna yang tidak diminta. Balas dalam bahasa yang digunakan pengguna. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -46,12 +46,20 @@ export default async function handler(req, res) {
     if (provider !== 'cloudflare' && !key) return res.status(503).json({ error: 'API Key untuk ' + provider.toUpperCase() + ' belum ditetapkan. Admin perlu pilih penyedia dan simpan key di /admin.', sessionId });
     if (provider === 'cloudflare' && image) return res.status(400).json({ error: 'Cloudflare Workers AI chat buat masa ini menerima teks sahaja. Gunakan fungsi penjanaan gambar untuk imej.', sessionId });
 
+    // Elakkan carian untuk sapaan, sembang ringkas dan mesej sosial biasa.
+    const normalizedMessage = message.toLowerCase().replace(/[^\\p{L}\\p{N}\\s]/gu, ' ').replace(/\\s+/g, ' ').trim();
+    const casualMessages = new Set(['wei','weii','weh','woi','oi','bro','hello','helo','hai','hi','hey','yo','assalamualaikum','salam','ok','okay','oke','baik','haha','hahaha','lol','test','testing','terima kasih','thanks','tq','bye','jumpa lagi']);
+    const isCasualMessage = normalizedMessage.length <= 35 && (casualMessages.has(normalizedMessage) || /^(wei+|weh+|woi+|oi+|bro+|hai+|hello+|hi+|hey+)[ ]*$/i.test(normalizedMessage));
+    const asksForSearch = /\\b(cari|search|google|sumber|rujukan|terkini|terbaru|sekarang|hari ini|minggu ini|tahun ini|202[5-9]|harga|berapa harga|jadual|keputusan|berita|update|status terkini)\\b/i.test(normalizedMessage);
+    const asksFactualQuestion = /\\b(apa maksud|maksud|makna|erti|apa itu|siapa|kenapa|mengapa|bila|tarikh|di mana|kat mana|bagaimana|macam mana|berapa|adakah|betul ke|benarkah)\\b/i.test(normalizedMessage);
+    const shouldUseGoogleSearch = !isCasualMessage && (asksForSearch || asksFactualQuestion || message.length > 100);
+
     // Let Gemini decide whether Google Search can improve this answer.
     let searchContext = '';
     let searchSources = [];
     let searchQueries = [];
     const googleGroundingKey = values.google_grounding_api_key ? decryptSecret(values.google_grounding_api_key) : '';
-    if (googleGroundingKey && !image) {
+    if (googleGroundingKey && !image && shouldUseGoogleSearch) {
       try {
         const groundingResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
           method: 'POST',
