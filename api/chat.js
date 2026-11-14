@@ -28,8 +28,13 @@ export default async function handler(req, res) {
       });
       sessionId = created?.[0]?.id;
       if (!sessionId) throw new Error('Tidak dapat mencipta sesi chat.');
-    } else if (signedInUser) {
-      await sbFetch('ibalz_chat_sessions?id=eq.' + encodeURIComponent(sessionId), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: signedInUser.id, user_email: signedInUser.email }) });
+    } else if (sessionId) {
+      const existingSession = await sbFetch('ibalz_chat_sessions?select=id,visitor_id,user_id&id=eq.' + encodeURIComponent(sessionId)).catch(() => []);
+      const owned = existingSession?.[0];
+      if (!owned) return res.status(404).json({ error: 'Sesi chat tidak dijumpai.' });
+      if (owned.user_id && (!signedInUser || owned.user_id !== signedInUser.id)) return res.status(403).json({ error: 'Sesi chat ini bukan milik akaun anda.' });
+      if (!owned.user_id && owned.visitor_id !== visitorId) return res.status(403).json({ error: 'Sesi chat ini bukan milik peranti anda.' });
+      if (signedInUser && !owned.user_id) await sbFetch('ibalz_chat_sessions?id=eq.' + encodeURIComponent(sessionId), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: signedInUser.id, user_email: signedInUser.email }) });
     }
     await sbFetch('ibalz_chat_messages', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
