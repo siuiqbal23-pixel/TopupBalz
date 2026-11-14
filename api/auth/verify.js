@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       if(!update.ok) throw new Error(updateData.message||updateData.msg||'Tidak dapat menetapkan kata laluan akaun.');
       await sbFetch('ibalz_user_profiles?on_conflict=id',{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify([{id:verifiedUser.id,username,email}])});
       await authRequest('logout',{method:'POST',headers:{Authorization:'Bearer '+token}}).catch(()=>{});
-      clearTempCookie(res); clearUserCookie(res);
+      res.setHeader('Set-Cookie', [\n        'ibalz_signup_verify=; HttpOnly; Secure; SameSite=Lax; Path=/api/auth/; Max-Age=0',\n        'ibalz_user=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0'\n      ]);
       return res.status(200).json({ok:true,registered:true,signedIn:false,message:'Akaun berjaya didaftarkan. Sila Sign In.'});
     }
     const token = String(req.body?.token || '').trim();
