@@ -104,6 +104,9 @@ function App() {
   if (route === '/admin') return <Admin />;
   if (route === '/login' || route === '/signup') return <Auth />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  useEffect(() => { let alive = true; fetch('/api/auth/me', { credentials: 'same-origin' }).then(r => r.json()).then(d => { if (alive) setSignedIn(Boolean(d.authenticated)); }).catch(() => { if (alive) setSignedIn(false); }).finally(() => { if (alive) setAuthChecked(true); }); return () => { alive = false; }; }, []);
   const [chats, setChats] = useState(readHistory);
   const [activeId, setActiveId] = useState(() => sessionStorage.getItem('ibalz-active-chat') || '');
   const [messages, setMessages] = useState(() => {
@@ -277,6 +280,8 @@ function App() {
     reader.readAsDataURL(file);
   }
   async function send() {
+    if (!authChecked) { setError('Sedang menyemak status akaun. Cuba sebentar lagi.'); return; }
+    if (!signedIn) { setError('Sila daftar atau Sign In dahulu untuk menggunakan IBalz AI.'); return; }
     const text = input.trim();
     if ((!text && !image) || busy) return;
     const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '\n[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
@@ -306,6 +311,7 @@ function App() {
     finally { setBusy(false); }
   }
   async function retryAnswer() {
+    if (!signedIn) { setError('Sila daftar atau Sign In dahulu untuk menggunakan IBalz AI.'); return; }
     if (busy) return;
     const lastUserIndex = messages.map(m => m.role).lastIndexOf('user');
     if (lastUserIndex < 0) return;
@@ -350,7 +356,7 @@ function App() {
       <div className="popup-anchor new-chat-anchor"><button className="top-action new-action" onClick={() => setNewMenuOpen(v => !v)} title="Chat baharu">＋ <span>Chat baharu</span></button>
         {newMenuOpen && <div className="top-popup new-popup"><button onClick={() => { startNew(); setNewMenuOpen(false); }}><span>＋</span><div><b>Chat baharu</b><small>Mulakan perbualan kosong</small></div></button></div>}
       </div>
-      <a className="top-action auth-top-link" href="/login">Sign In</a>
+      <a className="top-action auth-top-link" href={signedIn ? "/api/auth/logout" : "/login"}>{signedIn ? "Sign Out" : "Sign In"}</a>
     </header>
     <main className="shell">
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
