@@ -109,7 +109,7 @@ function App() {
   const [account, setAccount] = useState(null);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountTab, setAccountTab] = useState('info');
-  const [dataSubTab, setDataSubTab] = useState('memory');
+  const [dataSubTab, setDataSubTab] = useState('');
   const [aiLanguage, setAiLanguage] = useState(() => localStorage.getItem('ibalz-ai-language') || 'auto');
   const [passwordForm, setPasswordForm] = useState({ current: '', next: '', confirm: '' });
   const [passwordNotice, setPasswordNotice] = useState('');
@@ -532,7 +532,7 @@ function App() {
           <div className="account-menu-profile"><span className="account-avatar account-avatar-large">{(account?.email || 'A').trim().slice(0,1).toUpperCase()}</span><div><b>Akaun IBalz</b><small>Urus akaun dan tetapan anda</small></div></div>
           <nav className="account-settings-list" aria-label="Tetapan akaun">
             <button onClick={() => setAccountTab('info')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.5-3.4 3.1-5.2 7-5.2s6.5 1.8 7 5.2"/></svg></span><span><b>Akaun</b><small>Maklumat akaun dan kata laluan</small></span><i>›</i></button>
-            <button onClick={() => setAccountTab('settings')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="19" r="2"/></svg></span><span><b>Sesuaikan data</b><small>Memori dan data pilihan IBalz</small></span><i>›</i></button>
+            <button onClick={() => { setAccountTab('settings'); setDataSubTab(''); }}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="9" cy="5" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="8" cy="19" r="2"/></svg></span><span><b>Sesuaikan data</b><small>Memori dan data pilihan IBalz</small></span><i>›</i></button>
             <button onClick={() => setAccountTab('general')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 2.9-.2-.1a1.7 1.7 0 0 0-1.8.2l-.2.1h-3.4l-.1-.2a1.7 1.7 0 0 0-1.6-1l-.2.1-3-1.7.1-.2a1.7 1.7 0 0 0-.2-1.8l-.1-.2v-3.4l.2-.1a1.7 1.7 0 0 0 1-1.6l-.1-.2 1.7-3 .2.1a1.7 1.7 0 0 0 1.8-.2l.2-.1h3.4l.1.2a1.7 1.7 0 0 0 1.6 1l.2-.1 3 1.7-.1.2a1.7 1.7 0 0 0 .2 1.8l.1.2v3.4z"/></svg></span><span><b>Umum</b><small>Tema dan paparan aplikasi</small></span><i>›</i></button>
             <button onClick={() => setAccountTab('privacy')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M12 3 20 6v5c0 5-3.4 8.2-8 10-4.6-1.8-8-5-8-10V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span><b>Pusat privasi</b><small>Ketahui cara data akaun dikendalikan</small></span><i>›</i></button>
             <button onClick={() => setAccountTab('history')}><span className="settings-row-icon"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg></span><span><b>Sejarah dan data</b><small>Urus penggunaan data dan akaun</small></span><i>›</i></button>
