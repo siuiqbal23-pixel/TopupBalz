@@ -3,36 +3,38 @@ import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
 function buildDetailedImagePrompt(idea, conversation) {
-  const cleanIdea = String(idea || '').replace(/\\s+/g, ' ').trim();
+  const cleanIdea = String(idea || '').replace(/\s+/g, ' ').trim();
   const recent = (Array.isArray(conversation) ? conversation : [])
     .filter(item => item && (item.role === 'user' || item.role === 'assistant'))
     .slice(-30)
     .map(item => ({
       role: item.role,
-      content: String(item.content || '').replace(/\\s+/g, ' ').trim().slice(0, 1000),
+      content: String(item.content || '').replace(/\s+/g, ' ').trim().slice(0, 500),
     }))
     .filter(item => item.content);
 
-  // Only use older messages when the latest request clearly refers back to them.
-  const refersBack = /\\b(tadi|sebelum ini|yang tadi|macam tadi|gambar tadi|gambar itu|yang itu|sama macam|ubah|tukar|edit|jadikan|buat lagi|previous|earlier|that one|same|it|this image)\\b/i.test(cleanIdea);
+  const refersBack = /\b(tadi|sebelum ini|yang tadi|macam tadi|gambar tadi|gambar itu|yang itu|sama macam|ubah|tukar|edit|jadikan|buat lagi|previous|earlier|that one|same|this image)\b/i.test(cleanIdea);
   const context = refersBack
-    ? recent.slice(-12).map(item => (item.role === 'user' ? 'USER: ' : 'ASSISTANT: ') + item.content).join('\\n')
+    ? recent.slice(-6).map(item => (item.role === 'user' ? 'USER: ' : 'ASSISTANT: ') + item.content).join('\n').slice(-240)
     : '';
 
-  return [
-    'You are an expert image-prompt writer. The latest user request is the source of truth and has absolute priority.',
-    'Understand the request in its original language, including Malay colloquial spelling, typos, and short commands. Translate its meaning accurately into a clear English image prompt; do not change the requested subject or action.',
-    'SUBJECT LOCK: Identify the exact main subject explicitly named in the latest request. Keep that subject as the central and dominant subject. Never replace it with a person, family, father, mother, child, animal, object, or scene that the user did not ask for.',
-    'ACTION LOCK: Preserve the exact requested action. For example, “harimau nyanyi” means a tiger singing: show a tiger as the singer. Do not reinterpret it as a father and child, a human singing, or an unrelated scene.',
-    'ENTITY COUNT: Use only the number and kinds of subjects requested. If the user names one tiger, generate one tiger, not people or extra animals. Do not add humans, children, parents, couples, crowds, or extra characters unless explicitly requested.',
-    'CONTEXT RULE: Use prior messages only if the latest request clearly refers to an earlier image or detail (such as “gambar tadi”, “ubah warna”, or “same character”). If the latest request describes a new standalone image, IGNORE all previous conversation content. Never let unrelated earlier chat topics alter the new image.',
-    'If context is relevant, use it only to preserve details being referred to. The latest request overrides any conflicting older detail.',
-    'Create a vivid, coherent image prompt with: (1) exact subject and requested action, (2) appearance and pose, (3) suitable art style, (4) fitting environment/background, and (5) lighting, camera angle, framing, and detail.',
-    'Do not invent a story, relationship, extra characters, or objects. Do not add text, logos, or watermarks unless requested. Choose sensible defaults only for minor unspecified visual details.',
-    context ? 'Relevant earlier conversation (use only for the explicit follow-up):\\n' + context : 'This is a standalone image request. Do not use earlier conversation.',
-    'LATEST USER REQUEST (follow exactly): ' + cleanIdea,
-    'Return only the final image-generation prompt in English. The first sentence must name the exact requested subject and action.',
-  ].join('\\n\\n');
+  const rules = [
+    'Write a clear English image prompt. Understand Malay colloquial wording and typos accurately.',
+    'The latest request is authoritative. Name its exact subject and action first; never substitute another subject.',
+    'Example: “harimau nyanyi” = a tiger singing. Show the tiger as the singer, not a father, child, or human.',
+    'Use only requested subjects and quantities. Do not add people, family members, animals, or extra characters unless requested.',
+    'Use old chat only for a clear follow-up reference; ignore it for a new standalone request. Latest request overrides older details.',
+    'Add fitting style, background, lighting, and camera details without changing the requested subject/action. No unrequested text or watermark.',
+  ].join(' ');
+  const suffix = ' Return only the final image prompt.';
+
+  // Keep the complete payload under Cloudflare FLUX's 2048-character prompt limit.
+  const prefix = rules + (context ? ' Relevant earlier context: ' + context : '') + ' Latest user request: ';
+  const available = Math.max(1, 2048 - prefix.length - suffix.length);
+  const requestText = cleanIdea.length > available
+    ? cleanIdea.slice(0, available - 1).trimEnd() + '…'
+    : cleanIdea;
+  return prefix + requestText + suffix;
 }
 
 export default async function handler(req, res) {
