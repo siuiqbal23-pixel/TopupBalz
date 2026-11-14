@@ -2,7 +2,7 @@ import { sbFetch } from '../lib/supabase.js';
 import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
-function buildDetailedImagePrompt(idea, conversation) {
+function buildDetailedImagePrompt(idea, conversation, ownerRules = '') {
   const cleanIdea = String(idea || '').replace(/\\s+/g, ' ').trim();
   const recent = (Array.isArray(conversation) ? conversation : [])
     .filter(item => item && (item.role === 'user' || item.role === 'assistant'))
@@ -23,7 +23,8 @@ function buildDetailedImagePrompt(idea, conversation) {
   // examples can accidentally become subjects in image models.
   const instruction = 'Create an image matching the user request exactly. The latest request defines the only main subject and its action. Interpret Malay, informal Malay, spelling mistakes, and mixed-language wording by meaning. Do not replace the requested subject with anything from earlier conversation. Do not add unrelated people, animals, objects, or text. Make the requested action clearly visible. Choose a suitable realistic composition, background, and lighting. ';
   const contextText = context ? ' Earlier context, only for resolving the follow-up: ' + context + '. ' : '';
-  const prefix = instruction + contextText + 'User request: ';
+  const ownerText = ownerRules ? ' Owner guidance: ' + String(ownerRules).slice(-700) + '. ' : '';
+  const prefix = instruction + ownerText + contextText + 'User request: ';
   const suffix = '. Follow the user request literally; no unrelated subject, no watermark.';
   const available = Math.max(1, 2048 - prefix.length - suffix.length);
   const requestText = cleanIdea.length > available
@@ -43,7 +44,11 @@ export default async function handler(req, res) {
     const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
     const conversation = Array.isArray(req.body?.conversation) ? req.body.conversation : [];
     if (!prompt || prompt.length > 4000) return res.status(400).json({ error: 'Arahan gambar tidak sah atau terlalu panjang.' });
-    const detailedPrompt = buildDetailedImagePrompt(prompt, conversation);
+    const settings = await sbFetch('ibalz_settings?select=key,value&key=eq.admin_ai_instructions');
+    let adminInstructions = [];
+    try { adminInstructions = JSON.parse(settings?.[0]?.value || '[]'); } catch { adminInstructions = []; }
+    const ownerRules = Array.isArray(adminInstructions) ? adminInstructions.map(item => String(item?.content || '').trim()).filter(Boolean).join('\\n') : '';
+    const detailedPrompt = buildDetailedImagePrompt(prompt, conversation, ownerRules);
 
     const rows = await sbFetch('ibalz_settings?select=key,value&key=in.(cloudflare_api_token,cloudflare_account_id)');
     const values = Object.fromEntries((rows || []).map(row => [row.key, decryptSecret(row.value)]));
