@@ -14,6 +14,7 @@ export default async function handler(req, res) {
     if (existing?.length) return res.status(409).json({ error: 'Username ini sudah digunakan.' });
     const created = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data: { username } }) });
     if (!created.user?.id) return res.status(400).json({ error: 'Pendaftaran tidak berjaya. Semak e-mel atau cuba lagi.' });
+    if (Array.isArray(created.user.identities) && created.user.identities.length === 0) return res.status(409).json({ error: 'E-mel ini sudah pernah didaftarkan. Sila Sign In.' });
     await sbFetch('ibalz_user_profiles?on_conflict=id', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([{ id: created.user.id, username, email }]) });
     return res.status(200).json({ ok: true, needsOtp: true, email, message: 'Kod pengesahan dihantar ke e-mel. Masukkan OTP untuk sahkan akaun. Selepas itu, log masuk secara berasingan.' });
   } catch (error) {
