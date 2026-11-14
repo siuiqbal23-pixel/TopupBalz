@@ -91,6 +91,13 @@ function isImageRequest(text) {
     || /\b(?:gambar|imej|image|picture|poster|ilustrasi|illustration|logo)\b[\s\S]{0,100}\b(?:jana|hasilkan|buat|cipta|lukis|generate|create|draw)\b/i.test(text);
 }
 
+function needsGoogleSearch(text) {
+  const normalized = String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+  const casual = new Set(['wei','weii','weh','woi','oi','bro','hello','helo','hai','hi','hey','yo','assalamualaikum','salam','ok','okay','oke','baik','haha','hahaha','lol','test','testing','terima kasih','thanks','tq','bye','jumpa lagi']);
+  if (normalized.length <= 35 && (casual.has(normalized) || /^(wei+|weh+|woi+|oi+|bro+|hai+|hello+|hi+|hey+)\s*$/i.test(normalized))) return false;
+  return /\b(cari|search|google|sumber|rujukan|terkini|terbaru|sekarang|hari ini|minggu ini|tahun ini|202[5-9]|harga|berapa harga|jadual|keputusan|berita|update|status terkini|apa maksud|maksud|makna|erti|apa itu|siapa|kenapa|mengapa|bila|tarikh|di mana|kat mana|bagaimana|macam mana|berapa|adakah|betul ke|benarkah)\b/i.test(normalized) || String(text || '').length > 100;
+}
+
 function App() {
   if (window.location.pathname.replace(/\/$/, '') === '/admin') return <Admin />;
   const [dark, setDark] = useState(() => localStorage.getItem('ibalz-theme') === 'dark');
@@ -128,7 +135,7 @@ function App() {
     };
   }, [historyMenu]);
   const [busy, setBusy] = useState(false);
-  const [busyLabel, setBusyLabel] = useState('IBalz sedang fikir...');
+  const [busyLabel, setBusyLabel] = useState('');
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
   const [messageMenu, setMessageMenu] = useState(-1);
@@ -272,7 +279,7 @@ function App() {
     const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '\n[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
     const nextMessages = [...messages, userMessage];
     const currentId = activeId || uid();
-    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusyLabel(!image && isImageRequest(text) ? 'Sedang menjana gambar...' : 'IBalz sedang fikir...'); setBusy(true);
+    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusyLabel(!image && isImageRequest(text) ? 'Sedang menjana gambar...' : (needsGoogleSearch(text) ? 'Sedang mencari di Google...' : '')); setBusy(true);
     try {
       if (!image && isImageRequest(text)) {
         const res = await fetch('/api/images', {
@@ -301,7 +308,7 @@ function App() {
     if (lastUserIndex < 0) return;
     const lastUser = messages[lastUserIndex];
     setMessages(messages.slice(0, lastUserIndex + 1));
-    setBusy(true); setBusyLabel('IBalz sedang fikir...'); setError('');
+    setBusy(true); setBusyLabel(needsGoogleSearch(lastUser.content) ? 'Sedang mencari di Google...' : ''); setError('');
     try {
       const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:lastUser.content, sessionId, visitorId:getVisitorId() }) });
       const data = await res.json();
@@ -361,7 +368,7 @@ function App() {
             </div>
           </div>}
         </div>)}
-        {busy && <article className="msg assistant"><div className="busy-search-label">{busyLabel}</div><div className="bubble typing" aria-label={busyLabel}><i/><i/><i/></div></article>}
+        {busy && <article className="msg assistant">{busyLabel && <div className="busy-search-label">{busyLabel}</div>}<div className="bubble typing" aria-label={busyLabel}><i/><i/><i/></div></article>}
       </section>
       {showJumpDown && <button className="jump-to-latest" onClick={jumpToLatest} aria-label="Pergi ke mesej terkini" title="Mesej terkini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5"/></svg></button>}
       {error && <div className="error">{error}</div>}
