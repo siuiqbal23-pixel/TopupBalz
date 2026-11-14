@@ -346,7 +346,13 @@ function App() {
       if (!image && isImageRequest(text)) {
         const res = await fetch('/api/images', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: text })
+          body: JSON.stringify({
+            prompt: text,
+            conversation: nextMessages.slice(-30).map(message => ({
+              role: message.role === 'assistant' ? 'assistant' : 'user',
+              content: String(message.content || '').replace(/\\[Gambar dilampirkan\\]/g, '').slice(0, 1400)
+            }))
+          })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Tidak dapat menjana gambar.');
