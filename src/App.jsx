@@ -127,6 +127,7 @@ function App() {
     };
   }, [historyMenu]);
   const [busy, setBusy] = useState(false);
+  const [busyLabel, setBusyLabel] = useState('Sedang mencari di Google...');
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState({});
   const [messageMenu, setMessageMenu] = useState(-1);
@@ -270,7 +271,7 @@ function App() {
     const userMessage = { role: 'user', content: (text || (image ? 'Terangkan gambar ini.' : '')) + (image ? (text ? '\n[Gambar dilampirkan]' : '[Gambar dilampirkan]') : '') };
     const nextMessages = [...messages, userMessage];
     const currentId = activeId || uid();
-    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusy(true);
+    setActiveId(currentId); setMessages(nextMessages); setInput(''); setImage(''); setImageName(''); setError(''); setBusyLabel(!image && isImageRequest(text) ? 'Sedang menjana gambar...' : 'Sedang mencari di Google...'); setBusy(true);
     try {
       if (!image && isImageRequest(text)) {
         const res = await fetch('/api/images', {
@@ -288,7 +289,7 @@ function App() {
         const data = await res.json();
         if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
         if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
-        setMessages(v => [...v, { role: 'assistant', content: data.reply }]);
+        setMessages(v => [...v, { role: 'assistant', content: data.reply, searchSources: data.searchSources || [], searchQueries: data.searchQueries || [] }]);
       }
     } catch (e) { setError(e.message || 'Tidak dapat menyambung.'); }
     finally { setBusy(false); }
@@ -299,13 +300,13 @@ function App() {
     if (lastUserIndex < 0) return;
     const lastUser = messages[lastUserIndex];
     setMessages(messages.slice(0, lastUserIndex + 1));
-    setBusy(true); setError('');
+    setBusy(true); setBusyLabel('Sedang mencari di Google...'); setError('');
     try {
       const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ message:lastUser.content, sessionId, visitorId:getVisitorId() }) });
       const data = await res.json();
       if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
       if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
-      setMessages(v => [...v, { role:'assistant', content:data.reply }]);
+      setMessages(v => [...v, { role:'assistant', content:data.reply, searchSources:data.searchSources || [], searchQueries:data.searchQueries || [] }]);
     } catch (e) { setError(e.message || 'Tidak dapat mencuba semula.'); }
     finally { setBusy(false); setMessageMenu(-1); }
   }
@@ -343,7 +344,7 @@ function App() {
       {messages.length === 0 && <section className="welcome"><div className="eyebrow"><i/> IBALZ AI</div><h1>IBalz sedia<br/><em>membantu.</em></h1><p>Tanya apa sahaja yang anda perlukan.</p></section>}
       <section className="chat" ref={chatRef} onScroll={handleChatScroll}>
         {messages.map((m, i) => <div className="message-unit" key={i}>
-          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}{m.imageData && <img className="generated-image" src={m.imageData} alt="Gambar yang dijana oleh IBalz AI"/>}</div></article>
+          <article className={'msg ' + m.role}><div className="bubble">{renderMessage(m.content, copyMessage)}{m.imageData && <img className="generated-image" src={m.imageData} alt="Gambar yang dijana oleh IBalz AI"/>}</div>{m.role === 'assistant' && m.searchSources?.length > 0 && <div className="search-sources"><div className="search-sources-heading">⌕ Sumber Google Search</div>{m.searchQueries?.length > 0 && <p className="search-query-label">Carian: {m.searchQueries.join(' · ')}</p>}<div className="search-source-list">{m.searchSources.map((source, sourceIndex) => <a key={source.url || sourceIndex} href={source.url} target="_blank" rel="noopener noreferrer"><span>{source.title}</span><small>{String(source.url || '').replace(/^https?:\/\//, '').split('/')[0]}</small></a>)}</div></div>}</article>
           {m.role === 'assistant' && <div className="message-tools">
             <button title="Salin" aria-label="Salin" onClick={() => copyMessage(m.content)}><ActionIcon name="copy" /></button>
             <button className={feedback[i] === 'like' ? 'chosen' : ''} title="Suka" aria-label="Suka" onClick={() => setFeedback(v => ({...v,[i]:v[i] === 'like' ? '' : 'like'}))}><ActionIcon name="like" /></button>
@@ -359,7 +360,7 @@ function App() {
             </div>
           </div>}
         </div>)}
-        {busy && <article className="msg assistant"><div className="bubble typing" aria-label="IBalz sedang menaip"><i/><i/><i/></div></article>}
+        {busy && <article className="msg assistant"><div className="busy-search-label">{busyLabel}</div><div className="bubble typing" aria-label={busyLabel}><i/><i/><i/></div></article>}
       </section>
       {showJumpDown && <button className="jump-to-latest" onClick={jumpToLatest} aria-label="Pergi ke mesej terkini" title="Mesej terkini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v15M5.5 12.5 12 19l6.5-6.5"/></svg></button>}
       {error && <div className="error">{error}</div>}
