@@ -5,6 +5,10 @@ function sign(value, secret) {
 }
 
 export default async function handler(req, res) {
+  if (req.method === 'DELETE') {
+    res.setHeader('Set-Cookie', 'ibalz_admin=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0');
+    return res.status(200).json({ ok: true });
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method tidak dibenarkan.' });
   const secret = process.env.IBALZ_ADMIN_PASSWORD;
   if (!secret) return res.status(503).json({ error: 'Tetapkan IBALZ_ADMIN_PASSWORD dalam Vercel dahulu.' });
