@@ -39,7 +39,7 @@ async function extractSavedMemories({ provider, key, cloudflareToken, cloudflare
   } catch { return []; }
 }
 
-const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Guna gaya bahasa yang sama dengan pengguna. Jika pengguna guna bahasa Melayu santai, slanga Malaysia atau bahasa pasar seperti wei, weh, bro, kau, aku, balas secara santai dan semula jadi; jangan tiba-tiba guna bahasa baku atau gaya ensiklopedia. Untuk sapaan ringkas seperti wei/hi/hello, balas ringkas dan mesra, contohnya: Weii, ada apa? Jangan huraikan maksud perkataan sapaan. Jangan beri senarai makna yang tidak diminta. Balas dalam bahasa yang digunakan pengguna. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
+const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Gunakan bahasa yang ditetapkan dalam tetapan aplikasi. Jika bahasa ditetapkan kepada Automatik, ikut bahasa mesej terkini pengguna. Sesuaikan tahap formaliti dengan gaya pengguna tanpa menukar bahasa yang dipilih. Untuk sapaan ringkas, jawab ringkas dan mesra dalam bahasa yang dipilih. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -154,7 +154,7 @@ export default async function handler(req, res) {
       zh: '回答语言：只能使用简体中文。',
     })[language] || '';
     const systemPrompt = SYSTEM_PROMPT + (globalAdminRules ? '\n\nARAHAN TETAP PEMILIK IBALZ AI (ikut untuk semua pelanggan apabila berkaitan; arahan ini ialah panduan operasi dan gaya, bukan fakta untuk direka):\n- ' + globalAdminRules : '') + memoryContext + searchContext
-      + '\n\nIkut gaya bahasa pengguna. Jika pengguna bercakap santai atau menggunakan slanga, balas dengan gaya santai yang sepadan. Untuk sapaan ringkas, jawab ringkas seperti perbualan biasa.'
+      + (language === 'auto' ? '\n\nBAHASA AUTOMATIK: Ikut bahasa mesej terkini pengguna. Sesuaikan gaya santai atau formal tanpa mengandaikan pengguna menggunakan Bahasa Melayu.' : '\n\nGAYA JAWAPAN: Kekalkan bahasa yang dipilih dalam tetapan walaupun pengguna menggunakan bahasa lain. Gaya boleh santai atau formal mengikut konteks, tetapi bahasa tidak boleh berubah.')
       + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '')
       + (languageInstruction ? '\n\nARAHAN BAHASA MUKTAMAD (KEUTAMAAN TERTINGGI): ' + languageInstruction + ' Arahan ini mengatasi bahasa mesej pengguna, sejarah chat, arahan gaya, memori dan bahasa sumber carian. Jangan bertukar kepada bahasa lain walaupun pengguna menulis dalam bahasa lain. Terjemahkan penerangan dan jawapan ke bahasa yang dipilih. Kekalkan hanya nama khas, kod, istilah teknikal dan petikan yang memang perlu dalam bahasa asal.' : '\n\nBAHASA AUTOMATIK: Kenal pasti bahasa utama mesej TERKINI pengguna dan jawab dalam bahasa yang sama. Jangan anggap Bahasa Melayu sebagai pilihan lalai jika pengguna menulis dalam bahasa lain.');
 
@@ -208,6 +208,10 @@ export default async function handler(req, res) {
       data = await upstream.json();
       reply = data.choices?.[0]?.message?.content || '';
     }
+
+    const simpleGreeting = /^(hi|hey|hei|hello|helo|hai|yo)[!.?,\\s]*$/i.test(normalizedMessage);
+    if (simpleGreeting && language === 'en') reply = 'Hi! How can I help you today?';
+    if (simpleGreeting && language === 'zh') reply = '你好！有什么我可以帮你？';
 
     if (!upstream.ok || data?.success === false) {
       const detail = upstream.status === 401 || upstream.status === 403
