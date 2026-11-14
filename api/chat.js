@@ -34,7 +34,7 @@ export default async function handler(req, res) {
 
     const history = await sbFetch('ibalz_chat_messages?select=role,content&session_id=eq.' + encodeURIComponent(sessionId) + '&order=created_at.desc&limit=20');
     const messages = (history || []).reverse();
-    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key,cloudflare_api_token,cloudflare_account_id,google_search_api_key,google_search_cx)');
+    const settings = await sbFetch('ibalz_settings?select=key,value&key=in.(active_ai_provider,groq_api_key,openai_api_key,gemini_api_key,cloudflare_api_token,cloudflare_account_id,google_grounding_api_key)');
     const values = Object.fromEntries((settings || []).map(row => [row.key, row.value]));
     const provider = values.active_ai_provider || 'groq';
     const keyName = { groq: 'groq_api_key', openai: 'openai_api_key', gemini: 'gemini_api_key' }[provider];
@@ -46,29 +46,40 @@ export default async function handler(req, res) {
     if (provider !== 'cloudflare' && !key) return res.status(503).json({ error: 'API Key untuk ' + provider.toUpperCase() + ' belum ditetapkan. Admin perlu pilih penyedia dan simpan key di /admin.', sessionId });
     if (provider === 'cloudflare' && image) return res.status(400).json({ error: 'Cloudflare Workers AI chat buat masa ini menerima teks sahaja. Gunakan fungsi penjanaan gambar untuk imej.', sessionId });
 
-    // Search Google for each new user message when Google Search is configured.
+    // Let Gemini decide whether Google Search can improve this answer.
     let searchContext = '';
-    const googleKey = values.google_search_api_key ? decryptSecret(values.google_search_api_key) : '';
-    const googleCx = values.google_search_cx ? decryptSecret(values.google_search_cx) : '';
-    if (googleKey && googleCx && !image) {
+    const googleGroundingKey = values.google_grounding_api_key ? decryptSecret(values.google_grounding_api_key) : '';
+    if (googleGroundingKey && !image) {
       try {
-        const params = new URLSearchParams({ key: googleKey, cx: googleCx, q: message.slice(0, 500), num: '5' });
-        const searchResponse = await fetch('https://www.googleapis.com/customsearch/v1?' + params.toString());
-        const searchData = await searchResponse.json().catch(() => ({}));
-        if (searchResponse.ok) {
-          const items = Array.isArray(searchData.items) ? searchData.items.slice(0, 5) : [];
-          searchContext = items.length
-            ? '\\n\\nHASIL CARIAN GOOGLE (gunakan sebagai sumber terkini; nyatakan jika maklumat tiada atau bercanggah):\\n' + items.map((item, index) => (index + 1) + '. ' + (item.title || '') + '\\nURL: ' + (item.link || '') + '\\nRingkasan: ' + (item.snippet || '')).join('\\n\\n')
-            : '\\n\\nCarian Google tidak menemui hasil yang sesuai. Jangan reka sumber atau pautan.';
+        const groundingResponse = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': googleGroundingKey },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: 'Jawab soalan pengguna dengan maklumat web terkini jika carian diperlukan. Berikan jawapan ringkas dan tepat dalam bahasa pengguna. Soalan: ' + message.slice(0, 5000) }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 900 },
+          }),
+        });
+        const groundingData = await groundingResponse.json().catch(() => ({}));
+        if (groundingResponse.ok) {
+          const candidate = groundingData.candidates?.[0];
+          const groundedText = candidate?.content?.parts?.map(part => part.text || '').join('').trim() || '';
+          const chunks = candidate?.groundingMetadata?.groundingChunks || [];
+          const sources = chunks.map(chunk => chunk.web).filter(source => source?.uri)
+            .map(source => '- ' + (source.title || source.uri) + ': ' + source.uri);
+          if (groundedText) {
+            searchContext = '\\n\\nMAKLUMAT GOOGLE SEARCH TERKINI (rujuk jika berkaitan, jangan ubah fakta atau cipta sumber):\\n' + groundedText
+              + (sources.length ? '\\n\\nSUMBER GOOGLE:\\n' + [...new Set(sources)].join('\\n') : '');
+          }
         } else {
-          console.error('Google Search API error:', searchData?.error?.message || searchResponse.status);
+          console.error('Gemini Google Search grounding error:', groundingData?.error?.message || groundingResponse.status);
         }
       } catch (searchError) {
-        console.error('Google Search failed:', searchError?.message || searchError);
+        console.error('Gemini Google Search grounding failed:', searchError?.message || searchError);
       }
     }
     const systemPrompt = SYSTEM_PROMPT + searchContext
-      + (googleKey && googleCx ? '\\n\\nAnda mempunyai hasil carian Google untuk mesej terkini. Jawab berdasarkan hasil itu apabila relevan, sertakan pautan sumber yang diberikan, dan bezakan fakta daripada andaian.' : '');
+      + (googleGroundingKey ? '\\n\\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan dan sertakan pautan sumber yang diberikan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
     const lastUser = [...messages].map((m, i) => ({ ...m, i })).reverse().find(m => m.role === 'user');
     if (image && lastUser) messages[lastUser.i] = {
