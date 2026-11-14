@@ -71,10 +71,8 @@ export default async function handler(req, res) {
           searchSources = [...new Map(chunks.map(chunk => chunk.web).filter(source => source?.uri)
             .map(source => [source.uri, { title: source.title || source.uri, url: source.uri }])).values()];
           searchQueries = Array.isArray(grounding.webSearchQueries) ? grounding.webSearchQueries : [];
-          const sources = searchSources.map(source => '- ' + source.title + ': ' + source.url);
           if (groundedText) {
-            searchContext = '\n\nMAKLUMAT GOOGLE SEARCH TERKINI (rujuk jika berkaitan, jangan ubah fakta atau cipta sumber):\n' + groundedText
-              + (sources.length ? '\n\nSUMBER GOOGLE:\n' + [...new Set(sources)].join('\n') : '');
+            searchContext = '\n\nMAKLUMAT GOOGLE SEARCH TERKINI (rujuk jika berkaitan, jangan ubah fakta atau cipta sumber). Jangan senaraikan URL atau bahagian sumber dalam jawapan teks; sumber akan dipaparkan secara berasingan oleh aplikasi:\n' + groundedText;
           }
         } else {
           console.error('Gemini Google Search grounding error:', groundingData?.error?.message || groundingResponse.status);
@@ -84,7 +82,7 @@ export default async function handler(req, res) {
       }
     }
     const systemPrompt = SYSTEM_PROMPT + searchContext
-      + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan dan sertakan pautan sumber yang diberikan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
+      + (googleGroundingKey ? '\n\nJika maklumat Google Search disertakan, gunakan maklumat itu apabila relevan. Jangan tulis senarai sumber, URL, pautan atau ayat seperti “sumber yang dirujuk”; aplikasi memaparkan sumber secara berasingan. Jika tiada hasil carian, jawab berdasarkan pengetahuan sedia ada dan nyatakan jika tidak pasti.' : '');
 
     const lastUser = [...messages].map((m, i) => ({ ...m, i })).reverse().find(m => m.role === 'user');
     if (image && lastUser) messages[lastUser.i] = {
