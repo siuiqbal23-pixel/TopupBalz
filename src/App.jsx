@@ -516,7 +516,7 @@ function App() {
             <div><small>IBALZ ACCOUNT</small><h2>{accountTab === 'menu' ? 'Tetapan' : ({info:'Akaun',settings:'Sesuaikan IBalz',general:'Umum',privacy:'Pusat privasi',history:'Sejarah dan data',memory:'Memori'}[accountTab] || 'Tetapan')}</h2></div>
           </div>
           <div className="account-head-actions">
-            {accountTab === 'memory' && <button className="memory-more-btn" type="button" aria-label="Pilihan memori" onClick={() => setMemoryMenuOpen(v => !v)}><ActionIcon name="more"/></button>}
+            {accountTab === 'memory' && <div className="memory-head-menu"><button className="memory-more-btn" type="button" aria-label="Pilihan memori" onClick={() => setMemoryMenuOpen(v => !v)}><ActionIcon name="more"/></button>{memoryMenuOpen && <div className="memory-context-menu"><button type="button" disabled={memoryBusy} onClick={() => saveMemoryPreference(!memoryEnabled)}>{memoryBusy ? 'Menyimpan...' : memoryEnabled ? 'Matikan memori' : 'Hidupkan memori'}</button></div>}</div>}
             <button onClick={() => setAccountOpen(false)} aria-label="Tutup">×</button>
           </div>
         </div>
@@ -539,9 +539,6 @@ function App() {
         {accountTab === 'general' && <div className="account-section"><h3>Penampilan</h3><p className="account-description">Pilih tema paparan IBalz AI.</p><div className="account-theme-options"><button className={!dark?'active':''} onClick={() => {setDark(false);localStorage.setItem('ibalz-theme','light')}}>☀️ Cerah</button><button className={dark?'active':''} onClick={() => {setDark(true);localStorage.setItem('ibalz-theme','dark')}}>🌙 Gelap</button></div></div>}
         {accountTab === 'privacy' && <div className="account-section"><h3>Privasi akaun</h3><p className="account-description">Maklumat akaun digunakan untuk mengenal pasti akaun anda dan menyimpan sejarah perbualan supaya anda boleh menyambung semula chat pada masa akan datang.</p><div className="account-detail"><small>Maklumat profil</small><b>E-mel dan username akaun anda</b></div><div className="account-detail"><small>Sejarah chat</small><b>Disimpan pada akaun anda untuk akses semula</b></div><div className="account-detail"><small>Kata laluan</small><b>Kata laluan tidak dipaparkan dalam tetapan ini.</b></div></div>}
         {accountTab === 'memory' && <div className="account-section memory-section">
-          <div className="memory-menu-wrap">
-            {memoryMenuOpen && <div className="memory-context-menu"><button type="button" disabled={memoryBusy} onClick={() => saveMemoryPreference(!memoryEnabled)}>{memoryBusy ? 'Menyimpan...' : memoryEnabled ? 'Matikan memori' : 'Hidupkan memori'}</button></div>}
-          </div>
           <h3>Memori</h3>
           <p className="account-description">Di sini anda boleh melihat perkara yang IBalz simpan daripada perbualan untuk membantu jawapan akan datang. Kandungan memori ini hanya boleh dilihat dan tidak boleh diedit.</p>
           <div className={'memory-status ' + (memoryEnabled ? 'enabled' : 'disabled')}><span className="memory-status-dot"/><div><b>Memori {memoryEnabled ? 'dihidupkan' : 'dimatikan'}</b><small>{memoryEnabled ? 'IBalz boleh menyimpan dan menggunakan memori yang sesuai.' : 'IBalz tidak akan menyimpan atau menggunakan memori baharu.'}</small></div></div>
