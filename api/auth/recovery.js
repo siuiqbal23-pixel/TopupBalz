@@ -16,7 +16,7 @@ export default async function handler(req,res) {
   try {
     const action=String(req.body?.action||'');
     const email=String(req.body?.email||'').trim().toLowerCase();
-    if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return res.status(400).json({error:'Alamat e-mel tidak sah.'});
+    if(!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email)) return res.status(400).json({error:'Alamat e-mel tidak sah.'});
     if(action==='send') {
       const profiles=await sbFetch('ibalz_user_profiles?select=id&email=eq.'+encodeURIComponent(email)+'&limit=1');
       if(!profiles?.length) return res.status(404).json({error:'E-mel ini belum pernah didaftarkan. Sila semak e-mel anda.'});
@@ -25,7 +25,7 @@ export default async function handler(req,res) {
     }
     if(action==='verify') {
       const token=String(req.body?.token||'').trim();
-      if(!/^\\d{8}$/.test(token)) return res.status(400).json({error:'Masukkan kod OTP 8 digit.'});
+      if(!/^\d{8}$/.test(token)) return res.status(400).json({error:'Masukkan kod OTP 8 digit.'});
       const verified=await authRequest('verify',{method:'POST',body:JSON.stringify({email,token,type:'email'})});
       if(!verified.access_token||!verified.user?.id||String(verified.user.email||'').toLowerCase()!==email) return res.status(400).json({error:'OTP tidak sah atau e-mel tidak sepadan.'});
       const profiles=await sbFetch('ibalz_user_profiles?select=id&email=eq.'+encodeURIComponent(email)+'&id=eq.'+encodeURIComponent(verified.user.id)+'&limit=1');
