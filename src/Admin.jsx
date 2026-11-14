@@ -22,11 +22,12 @@ export default function Admin() {
     const [a, b, u] = await Promise.all([
       fetch('/api/admin/chats').then(r => r.json()),
       fetch('/api/admin/settings').then(r => r.json()),
-      fetch('/api/admin/users').then(r => r.json()),
+      fetch('/api/admin/users').then(r => r.json()).catch(e => ({ error: e.message })),
     ]);
     if (a.error || b.error) throw new Error(a.error || b.error);
     setSessions(a.sessions || []);
     setUsers(u.users || []);
+    if (u.error) setNotice('Paparan akaun belum dapat dimuatkan: ' + u.error);
     setConfigured({ ...(b.providers || { groq: Boolean(b.configured) }), cloudflare: Boolean(b.cloudflareConfigured) });
     setProvider(b.activeProvider || 'groq');
     setGoogleSearchConfigured(Boolean(b.googleSearchConfigured));
