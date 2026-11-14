@@ -343,3 +343,28 @@
 .auth-card form>button.auth-status-pending:hover,.auth-card form>button.auth-status-ready:hover{background:#e99552}
 
 .auth-card .auth-forgot{margin-top:10px;background:transparent;color:var(--muted,#777);border:0;padding:8px;font-size:12px;text-decoration:underline;box-shadow:none}.auth-card .auth-forgot:hover{color:#b86b35;background:transparent}
+
+
+/* Admin control center refresh */
+.admin-top-left{display:flex;align-items:center;gap:13px}
+.admin-menu-button{width:40px;height:40px;border:1px solid #eee;background:#fff;border-radius:12px;color:#292522;font-size:21px;cursor:pointer}
+.admin-menu-backdrop{position:fixed;inset:0;z-index:90;border:0;background:#17120f66;cursor:pointer}
+.admin-drawer{position:fixed;z-index:91;left:0;top:0;bottom:0;width:min(300px,84vw);padding:22px 16px;background:#fff;box-shadow:14px 0 45px #0002;display:flex;flex-direction:column;gap:8px;animation:adminDrawerIn .2s ease-out}
+.admin-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:8px 7px 22px;border-bottom:1px solid #f0e8e2;margin-bottom:8px;font:800 16px Manrope}
+.admin-drawer-head button{width:32px;height:32px;border:0;border-radius:9px;background:#fff2e8;color:#6f4329;font-size:23px;cursor:pointer}
+.admin-drawer>button{display:flex;align-items:center;gap:13px;width:100%;padding:13px 12px;border:0;border-radius:11px;background:transparent;color:#38322e;text-align:left;font:600 13px 'DM Sans';cursor:pointer}
+.admin-drawer>button:hover{background:#fff2e8;color:#a85f35}
+.admin-drawer>button:first-of-type{background:#fff2e8;color:#a85f35}
+.admin-user-row{background:#fff;transition:border-color .18s,box-shadow .18s}
+.admin-user-row:hover{border-color:#e5b18f;box-shadow:0 5px 18px #9a56200c}
+.admin-activity-list{display:grid;gap:8px}
+.admin-activity-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #eee;border-radius:12px;background:#fff;text-align:left;cursor:pointer;color:#292522}
+.admin-activity-row:hover{border-color:#e5b18f;background:#fffaf6}
+.admin-activity-avatar{width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;border-radius:12px;background:#fce9da;color:#a65d32;font:800 15px Manrope}
+.admin-activity-info{min-width:0;display:grid;gap:3px;flex:1}
+.admin-activity-info b{font-size:12px}
+.admin-activity-info small{font-size:10px;color:#888;overflow-wrap:anywhere}
+.admin-activity-status{padding:5px 8px;border-radius:20px;background:#eaf7ee;color:#27804a;font-size:10px;font-weight:700;white-space:nowrap}
+.admin-heading,.admin-panel{scroll-margin-top:18px}
+@keyframes adminDrawerIn{from{transform:translateX(-18px);opacity:.6}to{transform:translateX(0);opacity:1}}
+@media(max-width:560px){.admin-wrap{padding:22px 13px 42px}.admin-panel{padding:15px;border-radius:14px}.admin-heading{align-items:flex-start;gap:12px}.admin-stat{min-width:88px;padding:10px}.admin-stat strong{font-size:20px}.admin-activity-row{align-items:flex-start}.admin-activity-status{font-size:9px}}
