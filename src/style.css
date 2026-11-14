@@ -448,3 +448,10 @@
 .admin-full-chat-messages .admin-message.assistant{align-self:flex-start;background:#fff;border:1px solid #eaeaea}
 .admin-full-chat-messages .admin-message p{font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:640px){.admin-history-top{gap:8px;padding:9px 10px}.admin-history-back{padding:9px;font-size:11px}.admin-history-top>div b{font-size:12px}.admin-history-top>.admin-refresh{padding:8px;font-size:10px}.admin-user-history-content{padding:17px 13px}.admin-user-session-grid{grid-template-columns:1fr}.admin-full-chat{padding:14px}.admin-full-chat-messages .admin-message{max-width:94%}}
+
+
+/* User online / offline presence indicator */
+.admin-user-name{display:inline-flex;align-items:center;gap:8px}
+.admin-presence-dot{display:inline-block;width:9px;height:9px;flex:0 0 9px;border-radius:50%;box-shadow:0 0 0 2px #fff}
+.admin-presence-dot.online{background:#22a447}
+.admin-presence-dot.offline{background:#dc4545}
