@@ -5,7 +5,7 @@ import { currentUser } from '../lib/user-auth.js';
 
 async function extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages }) {
   const customerMessages = messages.filter(m => m.role === 'user').slice(-8).map(m => ({ role: 'user', content: typeof m.content === 'string' ? m.content.slice(0, 900) : '[image]' }));
-  const prompt = 'Extract useful, stable facts the customer voluntarily shared about themselves in their own messages. Return ONLY a JSON array of short strings, or [] if nothing should be remembered. Remember appropriate non-sensitive details such as preferred name/nickname, language and response style, interests and hobbies, learning goals, ongoing projects, devices/software they use, and durable preferences. Save only facts directly stated by the customer, never guesses or details invented by the assistant. Do not save one-off questions, temporary situations, or information about other people as if it described the customer. Never save passwords, API keys, OTPs, phone numbers, email addresses, contact details, precise addresses or live location, financial/payment/account details, or sensitive personal data such as health, religion, political views, ethnicity, sexuality, or criminal history. If unsure whether a detail is appropriate or belongs to the customer, omit it. Maximum 3 new items per turn, each under 180 characters. Customer messages: ' + JSON.stringify(customerMessages);
+  const prompt = 'Read the customer's recent messages and remember useful, lasting information that is clearly about the customer, even when they do not explicitly say “remember this”. This includes personal facts they share, preferred name, interests, hobbies, goals, skills they are learning, work or school projects, devices and software they use, preferences, and how they want the AI to respond. Do not save ordinary questions unless they reveal a lasting fact about the customer. Never turn details about another person into facts about the customer. Return ONLY a JSON array of natural, complete Malay or source-language sentences, each written like a normal sentence rather than a label, category, bullet, or key-value pair. Save up to 5 useful sentences per turn, each under 300 characters. Save only details clearly stated by the customer; never guess. Never save passwords, API keys, OTPs, phone numbers, email addresses, contact details, precise addresses or live location, financial/payment/account details, or sensitive personal data such as health, religion, political views, ethnicity, sexuality, or criminal history. If unsure whether a detail is appropriate or belongs to the customer, omit it. Customer messages: ' + JSON.stringify(customerMessages);
   let response, data, content = '';
   if (provider === 'cloudflare') {
     response = await fetch('https://api.cloudflare.com/client/v4/accounts/' + cloudflareAccountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct', {
@@ -35,7 +35,7 @@ async function extractSavedMemories({ provider, key, cloudflareToken, cloudflare
   if (start < 0 || end <= start) return [];
   try {
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string').map(item => item.trim()).filter(item => item.length > 0 && item.length <= 180).slice(0, 3) : [];
+    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string').map(item => item.trim()).filter(item => item.length > 0 && item.length <= 300).slice(0, 5) : [];
   } catch { return []; }
 }
 
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
     const savedMemories = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
     let responseMemories = savedMemories;
     const memoryContext = memoryEnabled && savedMemories.length
-      ? '\n\nMEMORI PENGGUNA YANG DISIMPAN (gunakan hanya jika relevan, jangan ulang senarai ini kepada pengguna):\n- ' + savedMemories.map(item => item.content).filter(Boolean).join('\n- ')
+      ? '\n\nMEMORI PENGGUNA (fakta dan pilihan yang pelanggan sendiri pernah kongsi; gunakan apabila relevan, jangan sebut atau paparkan memori ini melainkan ditanya):\n' + savedMemories.map(item => String(item.content || '').trim()).filter(Boolean).join(' ')
       : '';
     const languageInstruction = ({
       ms: 'BAHASA JAWAPAN: Bahasa Melayu sahaja.',
@@ -248,12 +248,12 @@ export default async function handler(req, res) {
       try {
         const explicitName = extractExplicitName(message);
         const extractedCandidates = await extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }] });
-        const candidates = [...(explicitName ? [explicitName] : []), ...extractedCandidates];
+        const candidates = [...(explicitName ? ['Nama pilihan pengguna ialah ' + explicitName.replace('Nama pilihan pengguna: ', '') + '.'] : []), ...extractedCandidates];
         if (candidates.length) {
           const existing = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
           const normalized = new Set(existing.map(item => String(item.content || '').toLowerCase().trim()));
           const additions = candidates.filter(content => !normalized.has(content.toLowerCase().trim()))
-            .map(content => ({ id: globalThis.crypto?.randomUUID?.() || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2)), content, created_at: new Date().toISOString() }));
+            .map(content => ({ id: globalThis.crypto?.randomUUID?.() || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2)), content: /[.!?。！？]$/.test(content.trim()) ? content.trim() : content.trim() + '.', created_at: new Date().toISOString() }));
           if (additions.length) {
             responseMemories = [...existing, ...additions].slice(-30);
             await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(signedInUser.id), {
