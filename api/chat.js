@@ -39,6 +39,22 @@ async function extractSavedMemories({ provider, key, cloudflareToken, cloudflare
   } catch { return []; }
 }
 
+function extractExplicitName(text) {
+  const value = String(text || '').trim();
+  const patterns = [
+    /(?:simpan|ingat|remember|save)\\s+(?:kan\\s+)?(?:nama\\s+)?(?:aku|saya)\\s*(?:ialah|adalah|:)?\\s+([\\p{L}][\\p{L}\\p{M}'’-]{1,39})/iu,
+    /(?:nama\\s+(?:aku|saya)|aku\\s+bernama|saya\\s+bernama|panggil\\s+(?:aku|saya))\\s*(?:ialah|adalah|:)?\\s+([\\p{L}][\\p{L}\\p{M}'’-]{1,39})/iu
+  ];
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match?.[1]) {
+      const name = match[1].trim();
+      if (!/^(apa|siapa|ni|tu|ini|itu|ke|kah)$/i.test(name)) return 'Nama pilihan pengguna: ' + name;
+    }
+  }
+  return '';
+}
+
 const SYSTEM_PROMPT = 'Anda ialah IBalz AI, pembantu AI yang mesra, jelas dan membantu. Gunakan bahasa yang ditetapkan dalam tetapan aplikasi. Jika bahasa ditetapkan kepada Automatik, ikut bahasa mesej terkini pengguna. Sesuaikan tahap formaliti dengan gaya pengguna tanpa menukar bahasa yang dipilih. Untuk sapaan ringkas, jawab ringkas dan mesra dalam bahasa yang dipilih. Identiti rasmi: IBalz AI dibangunkan di bawah jenama IBalz Technologies. Akronim IBALZ bermaksud Intelligent, Brilliant, Advanced, Leading dan Zenith. Jika pengguna bertanya siapa yang membangunkan IBalz AI, siapa penciptanya, dibuat oleh siapa, berasal dari mana, atau maksud IBALZ, terangkan identiti ini dengan jelas dan konsisten. Dalam Bahasa Melayu, boleh jawab: IBalz AI dibangunkan oleh IBalz Technologies. IBALZ membawa maksud Intelligent (kecerdasan), Brilliant (idea hebat), Advanced (teknologi maju), Leading (peneraju) dan Zenith (tahap kecemerlangan tertinggi). Jangan mendakwa nama individu tertentu, alamat pejabat, atau status syarikat berdaftar jika perkara itu tidak diberikan. Jangan masukkan penerangan identiti ini dalam jawapan yang tidak berkaitan.';
 
 export default async function handler(req, res) {
@@ -230,7 +246,9 @@ export default async function handler(req, res) {
     });
     if (memoryEnabled) {
       try {
-        const candidates = await extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }] });
+        const explicitName = extractExplicitName(message);
+        const extractedCandidates = await extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }] });
+        const candidates = [...(explicitName ? [explicitName] : []), ...extractedCandidates];
         if (candidates.length) {
           const existing = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
           const normalized = new Set(existing.map(item => String(item.content || '').toLowerCase().trim()));
