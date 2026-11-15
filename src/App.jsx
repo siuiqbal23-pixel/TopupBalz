@@ -273,17 +273,40 @@ function App() {
   }
   useEffect(() => {
     if (!signedIn || !activeId || messages.length === 0) return;
-    const current = { id: activeId, sessionId, title: titleFor(messages), messages: messages.map(({ imageData, ...message }) => message), updatedAt: new Date().toISOString() };
-    setChats(old => [current, ...old.filter(c => c.id !== activeId)].slice(0, 80));
-  }, [messages, sessionId, activeId, signedIn]);
-
-  function updateHistoryChat(id, patch) {
     setChats(old => {
-      const next = old.map(chat => chat.id === id ? { ...chat, ...patch } : chat);
+      const previous = old.find(chat => chat.id === activeId);
+      const current = {
+        id: activeId, sessionId,
+        title: previous?.titleCustom ? previous.title : titleFor(messages),
+        titleCustom: previous?.titleCustom === true,
+        pinned: previous?.pinned === true,
+        messages: messages.map(({ imageData, ...message }) => message),
+        updatedAt: new Date().toISOString()
+      };
+      const next = [current, ...old.filter(chat => chat.id !== activeId)].slice(0, 80);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
       return next;
     });
+  }, [messages, sessionId, activeId, signedIn]);
+
+  async function updateHistoryChat(chat, patch) {
     setHistoryMenu('');
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_chat_metadata', sessionId: chat.sessionId || chat.id, ...patch })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat menyimpan perubahan chat.');
+      setChats(old => {
+        const next = old.map(item => item.id === chat.id ? { ...item, ...patch, titleCustom: patch.title ? true : item.titleCustom } : item);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        return next;
+      });
+    } catch (e) {
+      setError(e.message || 'Tidak dapat menyimpan perubahan chat.');
+    }
   }
   async function deleteHistoryChat(chat) {
     if (!window.confirm(`Padam chat “${chat.title || 'Perbualan'}” secara kekal?`)) return;
@@ -311,7 +334,7 @@ function App() {
     if (nextTitle === null) return;
     const title = nextTitle.trim();
     if (!title) { setError('Nama chat tidak boleh kosong.'); return; }
-    updateHistoryChat(chat.id, { title: title.slice(0, 60) });
+    updateHistoryChat(chat, { title: title.slice(0, 60) });
   }
   function beginHistoryPress(id) {
     historyLongPressRef.current = false;
@@ -615,7 +638,7 @@ function App() {
       <div className="history-items">{visibleChats.length ? visibleChats.map(c => <div key={c.id} className="history-item-wrap" onPointerDown={() => beginHistoryPress(c.id)} onPointerUp={cancelHistoryPress} onPointerLeave={cancelHistoryPress} onPointerCancel={cancelHistoryPress} onContextMenu={e => { e.preventDefault(); setHistoryMenu(c.id); }}>
         <button className={'history-item ' + (activeId === c.id ? 'selected' : '')} onClick={() => { if (historyLongPressRef.current) { historyLongPressRef.current = false; return; } if (!historyMenu) openChat(c); }}><b>{c.pinned ? '📌 ' : ''}{c.title || 'Perbualan baharu'}</b></button>
         {historyMenu === c.id && <div className="history-context-menu">
-          <button onClick={() => updateHistoryChat(c.id, { pinned: !c.pinned })}>{c.pinned ? 'Nyahpin chat' : 'Pin chat'}</button>
+          <button onClick={() => updateHistoryChat(c, { pinned: !c.pinned })}>{c.pinned ? 'Nyahpin chat' : 'Pin chat'}</button>
           <button onClick={() => renameHistoryChat(c)}>Namakan semula</button>
           <button className="danger" onClick={() => deleteHistoryChat(c)}>Padam</button>
         </div>}
