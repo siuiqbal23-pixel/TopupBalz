@@ -6,6 +6,16 @@ export default async function handler(req, res) {
     try {
       const action = String(req.body?.action || '');
       const user = await currentUser(req, res);
+      if (action === 'delete_chat') {
+        if (!user?.id) return res.status(401).json({ error: 'Sila log masuk semula.' });
+        const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : '';
+        if (!sessionId) return res.status(400).json({ error: 'ID chat tidak sah.' });
+        const owned = await sbFetch('ibalz_chat_sessions?select=id&id=eq.' + encodeURIComponent(sessionId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+        if (!owned?.length) return res.status(404).json({ error: 'Chat tidak dijumpai atau sudah dipadam.' });
+        await sbFetch('ibalz_chat_messages?session_id=eq.' + encodeURIComponent(sessionId), { method: 'DELETE' });
+        await sbFetch('ibalz_chat_sessions?id=eq.' + encodeURIComponent(sessionId) + '&user_id=eq.' + encodeURIComponent(user.id), { method: 'DELETE' });
+        return res.status(200).json({ ok: true, deleted: true });
+      }
       if (action === 'presence') {
         if (!user?.id) return res.status(401).json({ error: 'Sila log masuk semula.' });
         await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(user.id), {
