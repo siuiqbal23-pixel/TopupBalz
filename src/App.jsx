@@ -15,10 +15,14 @@ function readHistory() {
   catch { return []; }
 }
 function titleFor(messages) {
-  const first = messages.find(m => m.role === 'user');
-  const raw = String(first?.content || '').replace(/\[Gambar dilampirkan\]/g, '').trim();
-  if (!raw) return 'Pertanyaan tentang gambar';
-  const q = raw.toLowerCase();
+  const userTexts = messages
+    .filter(m => m.role === 'user')
+    .map(m => String(m.content || '').replace(/\[Gambar dilampirkan\]/g, '').replace(/https?:\/\/\S+/g, '').trim())
+    .filter(Boolean);
+  if (!userTexts.length) return 'Pertanyaan tentang gambar';
+
+  // Tentukan tajuk daripada keseluruhan perbualan, bukan ayat pertama sahaja.
+  const conversation = userTexts.join(' ').toLowerCase();
   const topics = [
     [/\b(resit|receipt|semakan|check resit)\b/, 'Semakan resit'],
     [/\b(refund|pulangkan|duit balik|bayaran balik)\b/, 'Permintaan refund'],
@@ -29,15 +33,26 @@ function titleFor(messages) {
     [/\b(daftar|register|sign ?up|buat akaun)\b/, 'Pendaftaran akaun'],
     [/\b(promo|promosi|diskaun|voucher|kupon)\b/, 'Pertanyaan promosi'],
     [/\b(free fire|ff|mobile legends|mlbb|pubg|efootball|hok|honor of kings)\b/, 'Pertanyaan game'],
-    [/\b(error|ralat|tak boleh|tidak boleh|gagal|problem|masalah|bug)\b/, 'Bantuan masalah teknikal'],
-    [/\b(website|web|laman|link|pautan)\b/, 'Pertanyaan laman web']
+    [/\b(error|ralat|tak boleh|tidak boleh|gagal|problem|masalah|bug|baiki|fix)\b/, 'Bantuan teknikal'],
+    [/\b(website|web|laman|link|pautan)\b/, 'Pertanyaan laman web'],
+    [/\b(gambar|image|jana|generate|lukis|design)\b/, 'Penjanaan gambar'],
+    [/\b(terjemah|translate|maksud|erti)\b/, 'Terjemahan dan maksud'],
+    [/\b(kerja sekolah|sekolah|karangan|rumusan|pengajaran|matematik|sains)\b/, 'Bantuan pembelajaran']
   ];
-  const match = topics.find(([pattern]) => pattern.test(q));
+  const match = topics.find(([pattern]) => pattern.test(conversation));
   if (match) return match[1];
-  const cleaned = raw.replace(/^(hai|hi|hello|assalamualaikum)[,!. ]*/i, '').replace(/[?!.]+$/g, '').replace(/\s+/g, ' ').trim();
-  if (!cleaned) return 'Pertanyaan pelanggan';
-  const words = cleaned.split(' ').slice(0, 5).join(' ');
-  return words.length > 38 ? words.slice(0, 35).trimEnd() + '…' : words;
+
+  // Pilih mesej paling bermaklumat dan ringkaskan kepada beberapa perkataan.
+  const meaningful = userTexts
+    .map(text => text.replace(/^(hai|hi|hello|assalamualaikum)[,!. ]*/i, '').replace(/[?!.]+$/g, '').replace(/\s+/g, ' ').trim())
+    .filter(text => text.length > 0)
+    .sort((a, b) => Math.min(b.length, 180) - Math.min(a.length, 180));
+  const words = (meaningful[0] || 'Perbualan pelanggan')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(' ');
+  return words.length > 28 ? words.slice(0, 25).trimEnd() + '…' : (words || 'Perbualan pelanggan');
 }
 function ActionIcon({ name }) {
   const common = { width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true };
