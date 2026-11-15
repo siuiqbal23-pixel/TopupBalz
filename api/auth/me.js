@@ -6,6 +6,27 @@ export default async function handler(req, res) {
     try {
       const action = String(req.body?.action || '');
       const user = await currentUser(req, res);
+      if (action === 'update_chat_metadata') {
+        if (!user?.id) return res.status(401).json({ error: 'Sila log masuk semula.' });
+        const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : '';
+        if (!sessionId) return res.status(400).json({ error: 'ID chat tidak sah.' });
+        const owned = await sbFetch('ibalz_chat_sessions?select=id&id=eq.' + encodeURIComponent(sessionId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+        if (!owned?.length) return res.status(404).json({ error: 'Chat tidak dijumpai.' });
+        const patch = {};
+        if (typeof req.body?.title === 'string') {
+          const title = req.body.title.trim();
+          if (!title || title.length > 60) return res.status(400).json({ error: 'Nama chat mesti 1 hingga 60 aksara.' });
+          patch.title = title;
+          patch.title_custom = true;
+        }
+        if (typeof req.body?.pinned === 'boolean') patch.pinned = req.body.pinned;
+        if (!Object.keys(patch).length) return res.status(400).json({ error: 'Tiada perubahan untuk disimpan.' });
+        patch.updated_at = new Date().toISOString();
+        await sbFetch('ibalz_chat_sessions?id=eq.' + encodeURIComponent(sessionId) + '&user_id=eq.' + encodeURIComponent(user.id), {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+        });
+        return res.status(200).json({ ok: true, ...patch });
+      }
       if (action === 'delete_chat') {
         if (!user?.id) return res.status(401).json({ error: 'Sila log masuk semula.' });
         const sessionId = typeof req.body?.sessionId === 'string' ? req.body.sessionId : '';
@@ -74,7 +95,7 @@ export default async function handler(req, res) {
   if (req.query?.export === '1') {
     try {
       const profiles = await sbFetch('ibalz_user_profiles?select=username,email,created_at,improve_model_for_everyone,memory_enabled,memories&id=eq.' + encodeURIComponent(user.id) + '&limit=1');
-      const sessions = await sbFetch('ibalz_chat_sessions?select=id,title,created_at,updated_at&user_id=eq.' + encodeURIComponent(user.id) + '&order=created_at.asc&limit=500');
+      const sessions = await sbFetch('ibalz_chat_sessions?select=id,title,title_custom,pinned,created_at,updated_at&user_id=eq.' + encodeURIComponent(user.id) + '&order=created_at.asc&limit=500');
       const conversations = [];
       for (const session of (sessions || [])) {
         const messages = await sbFetch('ibalz_chat_messages?select=role,content,created_at&session_id=eq.' + encodeURIComponent(session.id) + '&order=created_at.asc&limit=2000');
@@ -87,13 +108,13 @@ export default async function handler(req, res) {
     try {
       const id = typeof req.query?.id === 'string' ? req.query.id : '';
       if (id) {
-        const owned = await sbFetch('ibalz_chat_sessions?select=id,title,user_id&id=eq.' + encodeURIComponent(id) + '&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+        const owned = await sbFetch('ibalz_chat_sessions?select=id,title,title_custom,pinned,user_id&id=eq.' + encodeURIComponent(id) + '&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
         if (!owned?.length) return res.status(404).json({ error: 'Chat tidak dijumpai.' });
         const messages = await sbFetch('ibalz_chat_messages?select=role,content,created_at&session_id=eq.' + encodeURIComponent(id) + '&order=created_at.asc&limit=500');
-        return res.status(200).json({ chat: { id, sessionId: id, title: owned[0].title || 'Perbualan baharu', messages: messages || [] } });
+        return res.status(200).json({ chat: { id, sessionId: id, title: owned[0].title || 'Perbualan baharu', titleCustom: owned[0].title_custom === true, pinned: owned[0].pinned === true, messages: messages || [] } });
       }
       const sessions = await sbFetch('ibalz_chat_sessions?select=id,title,created_at,updated_at&user_id=eq.' + encodeURIComponent(user.id) + '&order=updated_at.desc&limit=80');
-      return res.status(200).json({ chats: (sessions || []).map(s => ({ id: s.id, sessionId: s.id, title: s.title || 'Perbualan baharu', updatedAt: s.updated_at || s.created_at, messages: [] })) });
+      return res.status(200).json({ chats: (sessions || []).map(s => ({ id: s.id, sessionId: s.id, title: s.title || 'Perbualan baharu', titleCustom: s.title_custom === true, pinned: s.pinned === true, updatedAt: s.updated_at || s.created_at, messages: [] })) });
     } catch (error) { return res.status(500).json({ error: error.message || 'Gagal membaca sejarah chat.' }); }
   }
   try {
