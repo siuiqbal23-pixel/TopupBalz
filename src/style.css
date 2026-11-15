@@ -549,7 +549,7 @@
 .history-item-wrap .history-item.selected{
   border:0;background:var(--soft);color:var(--text);
 }
-.history-item-wrap .history-item b{font-size:15px;font-weight:650;letter-spacing:-.15px}
+.history-item-wrap .history-item b{font-size:15px;font-weight:400;letter-spacing:-.15px}
 .history-item-wrap .history-item:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
 .history-context-menu{border:0;border-radius:14px;box-shadow:0 10px 34px #0003}
 .drawer-new-chat{border:0;border-radius:12px;background:var(--soft);box-shadow:none}
