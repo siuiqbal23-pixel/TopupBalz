@@ -3,9 +3,9 @@ import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
 
-async function extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages }) {
+async function extractMemoryChanges({ provider, key, cloudflareToken, cloudflareAccountId, messages, existingMemories }) {
   const customerMessages = messages.filter(m => m.role === 'user').slice(-8).map(m => ({ role: 'user', content: typeof m.content === 'string' ? m.content.slice(0, 900) : '[image]' }));
-  const prompt = 'Read the customer's recent messages and remember useful, lasting information that is clearly about the customer, even when they do not explicitly say “remember this”. This includes personal facts they share, preferred name, interests, hobbies, goals, skills they are learning, work or school projects, devices and software they use, preferences, and how they want the AI to respond. Do not save ordinary questions unless they reveal a lasting fact about the customer. Never turn details about another person into facts about the customer. Return ONLY a JSON array of natural, complete Malay or source-language sentences, each written like a normal sentence rather than a label, category, bullet, or key-value pair. Save up to 5 useful sentences per turn, each under 300 characters. Save only details clearly stated by the customer; never guess. Never save passwords, API keys, OTPs, phone numbers, email addresses, contact details, precise addresses or live location, financial/payment/account details, or sensitive personal data such as health, religion, political views, ethnicity, sexuality, or criminal history. If unsure whether a detail is appropriate or belongs to the customer, omit it. Customer messages: ' + JSON.stringify(customerMessages);
+  const prompt = 'Read the customer's recent messages and remember useful, lasting information that is clearly about the customer, even when they do not explicitly say “remember this”. This includes personal facts they share, preferred name, interests, hobbies, goals, skills they are learning, work or school projects, devices and software they use, preferences, and how they want the AI to respond. Do not save ordinary questions unless they reveal a lasting fact about the customer. Never turn details about another person into facts about the customer. Return ONLY a JSON object with exactly two arrays: {"add":["complete natural sentences"],"remove":["exact existing memory sentence"]}. Add up to 5 useful facts as natural complete sentences, not labels or bullets. Remove only memories the customer clearly asks IBalz to forget/delete or that are explicitly corrected or made obsolete by the latest messages. Do not remove memories just because they are unrelated to the current question. Only choose remove entries from the supplied existing memories. If no change is needed, return {"add":[],"remove":[]}. Save only details clearly stated by the customer; never guess. Never save passwords, API keys, OTPs, phone numbers, email addresses, contact details, precise addresses or live location, financial/payment/account details, or sensitive personal data such as health, religion, political views, ethnicity, sexuality, or criminal history. If unsure whether a detail is appropriate or belongs to the customer, omit it. Customer messages: ' + JSON.stringify(customerMessages) + ' Existing memories: ' + JSON.stringify((existingMemories || []).map(item => item.content).filter(Boolean));
   let response, data, content = '';
   if (provider === 'cloudflare') {
     response = await fetch('https://api.cloudflare.com/client/v4/accounts/' + cloudflareAccountId + '/ai/run/@cf/meta/llama-3.1-8b-instruct', {
@@ -31,12 +31,12 @@ async function extractSavedMemories({ provider, key, cloudflareToken, cloudflare
   }
   if (!response.ok || data?.success === false) return [];
   const cleaned = String(content).replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
-  const start = cleaned.indexOf('['), end = cleaned.lastIndexOf(']');
-  if (start < 0 || end <= start) return [];
+  const start = cleaned.indexOf('{'), end = cleaned.lastIndexOf('}');
+  if (start < 0 || end <= start) return { add: [], remove: [] };
   try {
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    return Array.isArray(parsed) ? parsed.filter(item => typeof item === 'string').map(item => item.trim()).filter(item => item.length > 0 && item.length <= 300).slice(0, 5) : [];
-  } catch { return []; }
+    return { add: Array.isArray(parsed.add) ? parsed.add.filter(item => typeof item === 'string').map(item => item.trim()).filter(item => item.length > 0 && item.length <= 300).slice(0, 5) : [], remove: Array.isArray(parsed.remove) ? parsed.remove.filter(item => typeof item === 'string').map(item => item.trim()).slice(0, 10) : [] };
+  } catch { return { add: [], remove: [] }; }
 }
 
 function extractExplicitName(text) {
@@ -161,7 +161,7 @@ export default async function handler(req, res) {
     const savedMemories = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
     let responseMemories = savedMemories;
     const memoryContext = memoryEnabled && savedMemories.length
-      ? '\n\nMEMORI PENGGUNA (fakta dan pilihan yang pelanggan sendiri pernah kongsi; gunakan apabila relevan, jangan sebut atau paparkan memori ini melainkan ditanya):\n' + savedMemories.map(item => String(item.content || '').trim()).filter(Boolean).join(' ')
+      ? '\n\nMEMORI PENGGUNA (fakta dan pilihan yang pelanggan sendiri pernah kongsi; gunakan apabila relevan. Jika pelanggan minta sesuatu dilupakan atau membetulkan fakta lama, kemas kini/padam memori itu melalui sistem memori. Jangan sebut atau paparkan memori ini melainkan ditanya):\n' + savedMemories.map(item => String(item.content || '').trim()).filter(Boolean).join(' ')
       : '';
     const languageInstruction = ({
       ms: 'BAHASA JAWAPAN: Bahasa Melayu sahaja.',
@@ -247,20 +247,20 @@ export default async function handler(req, res) {
     if (memoryEnabled) {
       try {
         const explicitName = extractExplicitName(message);
-        const extractedCandidates = await extractSavedMemories({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }] });
-        const candidates = [...(explicitName ? ['Nama pilihan pengguna ialah ' + explicitName.replace('Nama pilihan pengguna: ', '') + '.'] : []), ...extractedCandidates];
-        if (candidates.length) {
-          const existing = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
-          const normalized = new Set(existing.map(item => String(item.content || '').toLowerCase().trim()));
-          const additions = candidates.filter(content => !normalized.has(content.toLowerCase().trim()))
-            .map(content => ({ id: globalThis.crypto?.randomUUID?.() || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2)), content: /[.!?。！？]$/.test(content.trim()) ? content.trim() : content.trim() + '.', created_at: new Date().toISOString() }));
-          if (additions.length) {
-            responseMemories = [...existing, ...additions].slice(-30);
-            await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(signedInUser.id), {
-              method: 'PATCH', headers: { Prefer: 'return=minimal' },
-              body: JSON.stringify({ memories: responseMemories }),
-            });
-          }
+        const existing = Array.isArray(memoryProfile.memories) ? memoryProfile.memories : [];
+        const changes = await extractMemoryChanges({ provider, key, cloudflareToken, cloudflareAccountId, messages: [...messages, { role: 'assistant', content: reply }], existingMemories: existing });
+        const candidates = [...(explicitName ? ['Nama pilihan pengguna ialah ' + explicitName.replace('Nama pilihan pengguna: ', '') + '.'] : []), ...changes.add];
+        const removeSet = new Set(changes.remove.map(value => value.toLowerCase().trim()));
+        const retained = existing.filter(item => !removeSet.has(String(item.content || '').toLowerCase().trim()));
+        const normalized = new Set(retained.map(item => String(item.content || '').toLowerCase().trim()));
+        const additions = candidates.filter(content => !normalized.has(content.toLowerCase().trim()))
+          .map(content => ({ id: globalThis.crypto?.randomUUID?.() || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2)), content: /[.!?。！？]$/.test(content.trim()) ? content.trim() : content.trim() + '.', created_at: new Date().toISOString() }));
+        if (additions.length || retained.length !== existing.length) {
+          responseMemories = [...retained, ...additions].slice(-30);
+          await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(signedInUser.id), {
+            method: 'PATCH', headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ memories: responseMemories }),
+          });
         }
       } catch (memoryError) {
         console.error('IBalz memory save failed:', memoryError?.message || memoryError);
