@@ -118,6 +118,7 @@ function App() {
   const [trainingBusy, setTrainingBusy] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [memories, setMemories] = useState([]);
+  const [newMemoryText, setNewMemoryText] = useState('');
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [memoryMenuOpen, setMemoryMenuOpen] = useState(false);
   const [dataNotice, setDataNotice] = useState('');
@@ -435,6 +436,28 @@ function App() {
     } catch (error) { setDataNotice(error.message || 'Tidak dapat menyimpan tetapan.'); }
     finally { setTrainingBusy(false); }
   }
+  async function updateMemories(nextMemories) {
+    setMemoryBusy(true); setDataNotice('');
+    try {
+      const response = await fetch('/api/auth/me', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'update_memories', memories: nextMemories }) });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat mengemas kini memori.');
+      setMemories(Array.isArray(data.memories) ? data.memories : nextMemories);
+      return true;
+    } catch (error) { setDataNotice(error.message || 'Tidak dapat mengemas kini memori.'); return false; }
+    finally { setMemoryBusy(false); }
+  }
+  async function addMemory() {
+    const content = newMemoryText.trim();
+    if (!content || memoryBusy) return;
+    const sentence = /[.!?。！？]$/.test(content) ? content : content + '.';
+    const ok = await updateMemories([...memories, { id: 'memory-' + Date.now(), content: sentence, created_at: new Date().toISOString() }]);
+    if (ok) setNewMemoryText('');
+  }
+  async function deleteMemory(memoryId) {
+    if (memoryBusy) return;
+    await updateMemories(memories.filter((item, index) => (item.id || String(index)) !== memoryId));
+  }
   async function saveMemoryPreference(enabled) {
     setMemoryBusy(true); setMemoryMenuOpen(false); setDataNotice('');
     try {
@@ -552,10 +575,14 @@ function App() {
           {!dataSubTab && <nav className="account-settings-list data-memory-list" aria-label="Pilihan Sesuaikan data"><button type="button" onClick={() => setDataSubTab('memory')}><span className="settings-row-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z"/><path d="m4.5 7.8 7.5 4.4 7.5-4.4M12 12.2V21M8 5.3l8 4.5"/></svg></span><span><b>Memori</b><small>Maklumat yang IBalz simpan</small></span><i>›</i></button></nav>}
           {dataSubTab === 'memory' && <>
           <h3>Memori</h3>
-          <p className="account-description">IBalz boleh menyimpan maklumat berguna yang pelanggan kongsi sendiri seperti bahasa pilihan, minat, hobi, projek dan pilihan jawapan. Memori ini digunakan untuk menyesuaikan jawapan akan datang. Pelanggan hanya boleh melihat kandungan memori; mereka tidak boleh mengeditnya.</p>
+          <p className="account-description">IBalz akan menyimpan perkara berguna tentang pelanggan yang dikongsi dalam perbualan, walaupun pelanggan tidak menyebut perkataan “simpan”. Memori ditulis sebagai ayat biasa. Pelanggan boleh menambah atau memadam ayat memori pada bila-bila masa.</p>
           <div className={'memory-status ' + (memoryEnabled ? 'enabled' : 'disabled')}><span className="memory-status-dot"/><div><b>Memori {memoryEnabled ? 'dihidupkan' : 'dimatikan'}</b><small>{memoryEnabled ? 'IBalz boleh menyimpan dan menggunakan memori yang sesuai.' : 'IBalz tidak akan menyimpan atau menggunakan memori baharu.'}</small></div></div>
+          <form className="memory-add-form" onSubmit={e => { e.preventDefault(); addMemory(); }}>
+            <textarea value={newMemoryText} onChange={e => setNewMemoryText(e.target.value)} placeholder="Tulis perkara tentang diri anda yang IBalz patut ingat..." rows="2" maxLength="500"/>
+            <button type="submit" disabled={memoryBusy || !newMemoryText.trim()}>{memoryBusy ? 'Menyimpan...' : 'Tambah memori'}</button>
+          </form>
           <div className="memory-list">
-            {memories.length ? memories.map((item, index) => <article className="memory-item" key={item.id || index}><span className="memory-item-icon">✦</span><div><p>{item.content}</p><small>{item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Memori tersimpan'}</small></div></article>) : <div className="memory-empty"><span>✦</span><b>Belum ada memori</b><small>Apabila IBalz menemui maklumat berguna untuk diingati dalam perbualan, ia akan dipaparkan di sini.</small></div>}
+            {memories.length ? memories.map((item, index) => <article className="memory-item" key={item.id || index}><div style={{flex:1,minWidth:0}}><p>{item.content}</p></div><button type="button" aria-label="Padam memori" title="Padam memori" disabled={memoryBusy} onClick={() => deleteMemory(item.id || String(index))} style={{border:0,background:'transparent',color:'var(--muted)',fontSize:20,cursor:'pointer',padding:'4px 8px'}}>×</button></article>) : <div className="memory-empty"><span>✦</span><b>Belum ada memori</b><small>Apabila pelanggan berkongsi perkara berguna tentang dirinya, IBalz akan menyimpannya sebagai ayat di sini.</small></div>}
           </div>
           </>}
         </div>}
