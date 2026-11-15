@@ -472,8 +472,7 @@
 .simple-top{position:fixed;top:12px;left:clamp(12px,4vw,38px);right:clamp(12px,4vw,38px);z-index:80;height:auto;padding:0;border:0;background:transparent;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .top-left-actions,.top-right-actions{display:flex;align-items:center;gap:9px;pointer-events:auto}
 .top-left-actions .hamburger-btn,.top-add-image-btn,.top-account-avatar,.auth-top-link{box-shadow:0 5px 18px #00000014;background:var(--bg)}
-.top-add-image-btn{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;color:var(--orange);font-size:25px;line-height:1;cursor:pointer}
-.top-add-image-btn:active{transform:scale(.95)}
+
 .new-chat-top-btn{width:40px;height:40px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--text);cursor:pointer;transition:background .18s,border-color .18s,transform .18s}
 .new-chat-top-btn:hover{background:var(--soft);border-color:var(--orange)}
 .new-chat-top-btn:active{transform:scale(.95)}
