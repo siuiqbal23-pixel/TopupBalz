@@ -285,15 +285,26 @@ function App() {
     });
     setHistoryMenu('');
   }
-  function deleteHistoryChat(chat) {
-    if (!window.confirm(`Padam chat “${chat.title || 'Perbualan'}”?`)) return;
-    setChats(old => {
-      const next = old.filter(item => item.id !== chat.id);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-      return next;
-    });
-    if (activeId === chat.id) startNew();
+  async function deleteHistoryChat(chat) {
+    if (!window.confirm(`Padam chat “${chat.title || 'Perbualan'}” secara kekal?`)) return;
     setHistoryMenu('');
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_chat', sessionId: chat.sessionId || chat.id })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Tidak dapat memadam chat.');
+      setChats(old => {
+        const next = old.filter(item => item.id !== chat.id && item.sessionId !== (chat.sessionId || chat.id));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+        return next;
+      });
+      if (activeId === chat.id || sessionId === (chat.sessionId || chat.id)) startNew();
+    } catch (error) {
+      setError(error.message || 'Tidak dapat memadam chat daripada server.');
+    }
   }
   function renameHistoryChat(chat) {
     const nextTitle = window.prompt('Masukkan nama baharu untuk chat ini:', chat.title || '');
