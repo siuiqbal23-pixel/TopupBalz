@@ -23,6 +23,13 @@ export default async function handler(req, res) {
         });
         return res.status(200).json({ ok: true, enabled });
       }
+      if (action === 'update_memories') {
+        const incoming = Array.isArray(req.body?.memories) ? req.body.memories : null;
+        if (!incoming || incoming.length > 50) return res.status(400).json({ error: 'Data memori tidak sah.' });
+        const memories = incoming.map(item => ({ id: String(item?.id || ('memory-' + Date.now() + '-' + Math.random().toString(36).slice(2))).slice(0, 100), content: String(item?.content || '').trim().slice(0, 500), created_at: item?.created_at || new Date().toISOString() })).filter(item => item.content);
+        await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(user.id), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ memories }) });
+        return res.status(200).json({ ok: true, memories });
+      }
       if (action === 'update_memory_preference') {
         const enabled = req.body?.enabled === true;
         await sbFetch('ibalz_user_profiles?id=eq.' + encodeURIComponent(user.id), {
