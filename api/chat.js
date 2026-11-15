@@ -276,6 +276,7 @@ export default async function handler(req, res) {
     }
     return res.status(200).json({ reply, sessionId, provider, searchSources, searchQueries, memories: responseMemories });
   } catch (error) {
+    console.error('IBalz chat function failed:', error?.stack || error?.message || error);
     return res.status(500).json({ error: error.message || 'Ralat pelayan semasa menyimpan chat.' });
   }
 }
