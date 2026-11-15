@@ -478,7 +478,10 @@ function App() {
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
   return <div className={dark ? 'app dark' : 'app'}>
     <header className="top simple-top">
-      <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Menu" aria-label="Buka menu"><span/><span/><span/></button>
+      <div className="top-left-actions">
+        <button className="hamburger-btn" onClick={() => { setHistoryOpen(true); setNewMenuOpen(false); }} title="Menu" aria-label="Buka menu"><span/><span/><span/></button>
+        <button className="top-add-image-btn" onClick={() => fileRef.current?.click()} title="Tambah gambar" aria-label="Tambah gambar">＋</button>
+      </div>
       <div className="top-right-actions">
         {signedIn ? <button className="top-account-avatar" onClick={() => { setAccountOpen(true); setAccountTab('menu'); setHistoryOpen(false); setPasswordNotice(''); }} title="Akaun" aria-label="Buka tetapan akaun"><span>{(account?.email || 'A').trim().slice(0,1).toUpperCase()}</span></button> : <a className="top-action auth-top-link" href="/login">Log Masuk</a>}
       </div>
@@ -510,7 +513,6 @@ function App() {
       {image && <div className="image-preview"><img src={image} alt="Pratonton gambar"/><div><b>{imageName}</b><small>Gambar sedia dihantar</small></div><button onClick={() => { setImage(''); setImageName(''); }} aria-label="Buang gambar">×</button></div>}
       <section className="composer">
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={e => chooseImage(e.target.files?.[0])}/>
-        <button className="attach" onClick={() => fileRef.current?.click()} title="Tambah gambar" aria-label="Tambah gambar">＋</button>
         <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} placeholder="Mesej IBalz..." rows="1"/>
         <button className="send" onClick={send} disabled={busy || (!input.trim() && !image)} aria-label="Hantar">↑</button>
       </section>
