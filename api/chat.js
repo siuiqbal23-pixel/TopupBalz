@@ -42,8 +42,8 @@ async function extractSavedMemories({ provider, key, cloudflareToken, cloudflare
 function extractExplicitName(text) {
   const value = String(text || '').trim();
   const patterns = [
-    /(?:simpan|ingat|remember|save)\\s+(?:kan\\s+)?(?:nama\\s+)?(?:aku|saya)\\s*(?:ialah|adalah|:)?\\s+([\\p{L}][\\p{L}\\p{M}'’-]{1,39})/iu,
-    /(?:nama\\s+(?:aku|saya)|aku\\s+bernama|saya\\s+bernama|panggil\\s+(?:aku|saya))\\s*(?:ialah|adalah|:)?\\s+([\\p{L}][\\p{L}\\p{M}'’-]{1,39})/iu
+    /(?:simpan|ingat|remember|save)\s+(?:kan\s+)?(?:nama\s+)?(?:aku|saya)\s*(?:ialah|adalah|:)?\s+([\p{L}][\p{L}\p{M}'’-]{1,39})/iu,
+    /(?:nama\s+(?:aku|saya)|aku\s+bernama|saya\s+bernama|panggil\s+(?:aku|saya))\s*(?:ialah|adalah|:)?\s+([\p{L}][\p{L}\p{M}'’-]{1,39})/iu
   ];
   for (const pattern of patterns) {
     const match = value.match(pattern);
