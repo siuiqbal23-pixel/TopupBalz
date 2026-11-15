@@ -378,7 +378,13 @@ function App() {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message: userMessage.content, image: image || undefined, sessionId, visitorId: getVisitorId(), language: aiLanguage })
         });
-        const data = await res.json();
+        const rawResponse = await res.text();
+        let data;
+        try { data = JSON.parse(rawResponse); }
+        catch {
+          const detail = rawResponse.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+          throw new Error(detail ? 'Server IBalz AI memulangkan respons tidak sah: ' + detail : 'Server IBalz AI tidak memulangkan respons JSON. Cuba lagi sebentar.');
+        }
         if (data.sessionId) { setSessionId(data.sessionId); localStorage.setItem('ibalz-chat-session', data.sessionId); }
         if (!res.ok) throw new Error(data.error || 'Permintaan gagal.');
         if (Array.isArray(data.memories)) setMemories(data.memories);
