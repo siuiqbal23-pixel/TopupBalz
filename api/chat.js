@@ -3,6 +3,14 @@ import { decryptSecret } from '../lib/secret-box.js';
 import { currentUser } from '../lib/user-auth.js';
 
 
+async function readJsonResponse(response) {
+  const raw = await response.text();
+  try { return JSON.parse(raw); }
+  catch {
+    return { error: raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500) || 'Penyedia AI memulangkan respons bukan JSON.' };
+  }
+}
+
 async function extractMemoryChanges({ provider, key, cloudflareToken, cloudflareAccountId, messages, existingMemories }) {
   const customerMessages = messages.filter(m => m.role === 'user').slice(-8).map(m => ({ role: 'user', content: typeof m.content === 'string' ? m.content.slice(0, 900) : '[image]' }));
   const prompt = 'Read the customer's recent messages and remember useful, lasting information that is clearly about the customer, even when they do not explicitly say “remember this”. This includes personal facts they share, preferred name, interests, hobbies, goals, skills they are learning, work or school projects, devices and software they use, preferences, and how they want the AI to respond. Do not save ordinary questions unless they reveal a lasting fact about the customer. Never turn details about another person into facts about the customer. Return ONLY a JSON object with exactly two arrays: {"add":["complete natural sentences"],"remove":["exact existing memory sentence"]}. Add up to 5 useful facts as natural complete sentences, not labels or bullets. Remove only memories the customer clearly asks IBalz to forget/delete or that are explicitly corrected or made obsolete by the latest messages. Do not remove memories just because they are unrelated to the current question. Only choose remove entries from the supplied existing memories. If no change is needed, return {"add":[],"remove":[]}. Save only details clearly stated by the customer; never guess. Never save passwords, API keys, OTPs, phone numbers, email addresses, contact details, precise addresses or live location, financial/payment/account details, or sensitive personal data such as health, religion, political views, ethnicity, sexuality, or criminal history. If unsure whether a detail is appropriate or belongs to the customer, omit it. Customer messages: ' + JSON.stringify(customerMessages) + ' Existing memories: ' + JSON.stringify((existingMemories || []).map(item => item.content).filter(Boolean));
@@ -12,21 +20,21 @@ async function extractMemoryChanges({ provider, key, cloudflareToken, cloudflare
       method: 'POST', headers: { Authorization: 'Bearer ' + cloudflareToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: [{ role: 'system', content: 'You are a private memory extraction helper. Output valid JSON only.' }, { role: 'user', content: prompt }], max_tokens: 300 }),
     });
-    data = await response.json();
+    data = await readJsonResponse(response);
     content = data.result?.response || data.result?.output || '';
   } else if (provider === 'gemini') {
     response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: 'You are a private memory extraction helper. Output valid JSON only.' }] }, generationConfig: { temperature: 0.1, maxOutputTokens: 300 } }),
     });
-    data = await response.json();
+    data = await readJsonResponse(response);
     content = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
   } else {
     response = await fetch(provider === 'groq' ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions', {
       method: 'POST', headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: provider === 'groq' ? (process.env.GROQ_MODEL || 'openai/gpt-oss-120b') : 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are a private memory extraction helper. Output valid JSON only.' }, { role: 'user', content: prompt }], temperature: 0.1, max_tokens: 300 }),
     });
-    data = await response.json();
+    data = await readJsonResponse(response);
     content = data.choices?.[0]?.message?.content || '';
   }
   if (!response.ok || data?.success === false) return [];
@@ -190,7 +198,7 @@ export default async function handler(req, res) {
         headers: { Authorization: 'Bearer ' + cloudflareToken, 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ role: 'system', content: systemPrompt }, ...messages], max_tokens: 1200 }),
       });
-      data = await upstream.json();
+      data = await readJsonResponse(upstream);
       reply = data.result?.response || data.result?.output || '';
     } else if (provider === 'gemini') {
       const contents = messages.map(item => {
@@ -206,7 +214,7 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
         body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { temperature: 0.7, maxOutputTokens: 1200 } }),
       });
-      data = await upstream.json();
+      data = await readJsonResponse(upstream);
       reply = data.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
     } else {
       const model = provider === 'groq'
@@ -221,7 +229,7 @@ export default async function handler(req, res) {
           temperature: 0.7, max_tokens: 1200,
         }),
       });
-      data = await upstream.json();
+      data = await readJsonResponse(upstream);
       reply = data.choices?.[0]?.message?.content || '';
     }
 
